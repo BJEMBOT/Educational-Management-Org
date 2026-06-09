@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { roleLabels } from '@/lib/permissions'
+import { ItTicketDialog } from '@/components/support/it-ticket-dialog'
 import type { Profile } from '@/lib/database.types'
 import Link from 'next/link'
 
@@ -98,6 +99,9 @@ export function AppHeader({
             className="h-8 pl-8 text-xs"
             disabled
           />
+        </div>
+        <div className="md:hidden">
+          <ItTicketDialog compact triggerVariant="ghost" triggerSize="sm" />
         </div>
         <Button variant="ghost" size="icon" className="relative h-8 w-8">
           <Bell className="h-4 w-4" />

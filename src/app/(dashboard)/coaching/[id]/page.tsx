@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCoachingCycleById } from '@/lib/queries/coaching'
 import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManageCoaching } from '@/lib/permissions'
 import { CoachingCycleDetail } from '@/components/coaching/coaching-cycle-detail'
 
 export default async function CoachingDetailPage({
@@ -16,10 +17,7 @@ export default async function CoachingDetailPage({
 
   if (!detail) notFound()
 
-  const canWrite =
-    profile?.role === 'coach' ||
-    profile?.role === 'consultant' ||
-    profile?.role === 'admin'
+  const canWrite = profile ? canManageCoaching(profile.role) : false
 
   return (
     <CoachingCycleDetail

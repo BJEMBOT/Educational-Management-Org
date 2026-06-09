@@ -3,13 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManagePd } from '@/lib/permissions'
 import { getGroupMemberIds } from '@/lib/queries/users'
-
-const ASSIGN_ROLES = ['admin', 'regional_manager']
 
 async function requireAssignPermission() {
   const profile = await getCurrentProfile()
-  if (!profile || !ASSIGN_ROLES.includes(profile.role)) {
+  if (!profile || !canManagePd(profile.role)) {
     return { error: 'Only administrators can assign PD sessions.' as const, profile: null }
   }
   return { error: null, profile }

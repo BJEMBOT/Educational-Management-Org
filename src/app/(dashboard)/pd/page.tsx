@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
 import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManagePd } from '@/lib/permissions'
 import { getPdEvents, getUserRegistrations } from '@/lib/queries/pd'
 import { PdEventForm } from '@/components/pd/pd-event-form'
 import { PdAssignDialog } from '@/components/pd/pd-assign-dialog'
@@ -13,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default async function PdCatalogPage() {
   const profile = await getCurrentProfile()
-  const canManage = profile?.role === 'admin' || profile?.role === 'regional_manager'
+  const canManage = profile ? canManagePd(profile.role) : false
   const [events, registrations] = await Promise.all([
     getPdEvents(),
     profile ? getUserRegistrations(profile.id) : Promise.resolve([]),

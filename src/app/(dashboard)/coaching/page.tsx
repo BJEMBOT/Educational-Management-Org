@@ -3,6 +3,10 @@ import { Plus } from 'lucide-react'
 import { getCurrentProfile } from '@/lib/queries/profile'
 import { getCoachingCycles, getProfilesByRole } from '@/lib/queries/coaching'
 import { getSchools } from '@/lib/queries/schools'
+import {
+  canManageCoaching,
+  canViewAllCoachingCycles,
+} from '@/lib/permissions'
 import { CoachingCycleForm } from '@/components/coaching/coaching-cycle-form'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTableWrapper } from '@/components/ui/data-table-wrapper'
@@ -11,12 +15,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default async function CoachingPage() {
   const profile = await getCurrentProfile()
-  const isCoach = profile?.role === 'coach' || profile?.role === 'consultant' || profile?.role === 'admin'
+  const canCreate = profile ? canManageCoaching(profile.role) : false
+  const viewAll = profile ? canViewAllCoachingCycles(profile.role) : false
+  const isCoach =
+    profile?.role === 'coach' || profile?.role === 'consultant'
   const isTeacher = profile?.role === 'teacher'
 
   const [cycles, schools, teachers] = await Promise.all([
     getCoachingCycles(
-      isCoach && profile ? { coachId: profile.id } : isTeacher && profile ? { teacherId: profile.id } : undefined
+      viewAll
+        ? undefined
+        : isCoach && profile
+          ? { coachId: profile.id }
+          : isTeacher && profile
+            ? { teacherId: profile.id }
+            : undefined
     ),
     getSchools(),
     getProfilesByRole('teacher'),
@@ -28,7 +41,7 @@ export default async function CoachingPage() {
         title="Instructional Coaching"
         subtitle="Manage coaching cycles, observations, and teacher feedback"
         actions={
-          isCoach && profile ? (
+          canCreate && profile ? (
             <CoachingCycleForm
               schools={schools}
               teachers={teachers}

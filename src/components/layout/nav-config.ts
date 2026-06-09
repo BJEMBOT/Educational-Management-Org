@@ -129,7 +129,7 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    title: 'Partners',
+    title: 'Network',
     items: [
       {
         href: '/partners',

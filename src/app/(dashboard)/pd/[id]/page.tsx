@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import { getPdEventById, getEventRegistrations, getUserRegistrations } from '@/lib/queries/pd'
 import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManagePd } from '@/lib/permissions'
 import { PdRegisterButton } from '@/components/pd/pd-register-button'
 import { PdAssignDialog } from '@/components/pd/pd-assign-dialog'
 import { PdRegistrationsList } from '@/components/pd/pd-registrations-list'
@@ -22,7 +23,7 @@ export default async function PdEventDetailPage({
 
   if (!event) notFound()
 
-  const canManage = profile?.role === 'admin' || profile?.role === 'regional_manager'
+  const canManage = profile ? canManagePd(profile.role) : false
   const [userRegistrations, eventRegistrations] = await Promise.all([
     profile ? getUserRegistrations(profile.id) : Promise.resolve([]),
     canManage ? getEventRegistrations(id) : Promise.resolve([]),

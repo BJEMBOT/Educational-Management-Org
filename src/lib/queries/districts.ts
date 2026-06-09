@@ -73,6 +73,8 @@ export function buildDistrictDetails(input: {
 }): DistrictDetail[] {
   const districts = [...new Set(input.schools.map((s) => s.district))].sort()
 
+  const healthOrder = { off_track: 0, at_risk: 1, healthy: 2 } as const
+
   return districts.map((district) => {
     const districtSchools = input.schools.filter((s) => s.district === district)
     const schoolIds = new Set(districtSchools.map((s) => s.id))
@@ -116,5 +118,9 @@ export function buildDistrictDetails(input: {
         teacherCount: districtTeachers.length,
       }),
     }
+  }).sort((a, b) => {
+    const healthDiff = healthOrder[a.healthStatus] - healthOrder[b.healthStatus]
+    if (healthDiff !== 0) return healthDiff
+    return b.openInterventionCount - a.openInterventionCount
   })
 }

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { getNavForRole, isNavItemActive } from '@/components/layout/nav-config'
 import { NavLink } from '@/components/layout/nav-link'
 import { FinanceLockDialog } from '@/components/layout/finance-lock-dialog'
+import { ItTicketDialog } from '@/components/support/it-ticket-dialog'
 import { Badge } from '@/components/ui/badge'
 import { FINANCE_UNLOCK_STORAGE_KEY } from '@/lib/finance-access'
 import type { UserRole } from '@/lib/database.types'
@@ -22,7 +23,7 @@ export function AppSidebar({ role }: { role: UserRole }) {
   }, [])
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+    <aside className="hidden min-h-screen w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary">
           <Building2 className="h-4 w-4 text-sidebar-primary-foreground" />
@@ -113,6 +114,12 @@ export function AppSidebar({ role }: { role: UserRole }) {
           )
         })}
       </nav>
+      <div className="mt-auto border-t border-sidebar-border px-3 py-3">
+        <ItTicketDialog
+          triggerVariant="ghost"
+          className="text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+        />
+      </div>
       <FinanceLockDialog
         open={lockDialogOpen}
         onOpenChange={setLockDialogOpen}

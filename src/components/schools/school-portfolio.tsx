@@ -7,6 +7,7 @@ import { buildDistrictDetails, getTeachersBySchool } from '@/lib/queries/distric
 import { SchoolFormDialog } from '@/components/schools/school-form-dialog'
 import { SchoolPortfolioTable } from '@/components/schools/school-portfolio-table'
 import { DistrictRollupCards } from '@/components/schools/district-rollup-cards'
+import { PortfolioSummary } from '@/components/schools/portfolio-summary'
 import { PageHeader } from '@/components/ui/page-header'
 
 export async function SchoolPortfolio() {
@@ -46,7 +47,18 @@ export async function SchoolPortfolio() {
         }
       />
 
-      {districts.length > 0 && <DistrictRollupCards districts={districts} />}
+      {districts.length > 0 && (
+        <div className="space-y-8">
+          <PortfolioSummary
+            districtCount={districts.length}
+            schoolCount={schools.length}
+            totalEnrollment={schools.reduce((s, sc) => s + sc.enrollment, 0)}
+            openInterventions={districts.reduce((s, d) => s + d.openInterventionCount, 0)}
+            schoolsNeedingAttention={schools.filter((s) => s.healthStatus !== 'healthy').length}
+          />
+          <DistrictRollupCards districts={districts} />
+        </div>
+      )}
 
       <SchoolPortfolioTable schools={schools} partnerCounts={partnerCounts} />
     </div>

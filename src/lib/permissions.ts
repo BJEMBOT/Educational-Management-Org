@@ -146,6 +146,27 @@ export function canViewPartnerUserDirectory(role: UserRole): boolean {
   return role === 'admin' || role === 'developer' || role === 'partner'
 }
 
+export function canSubmitTimeOff(profile: Pick<Profile, 'role' | 'partner_id'>): boolean {
+  if (profile.role === 'admin' || profile.role === 'developer') return true
+  return isPartnerUser(profile)
+}
+
+export function canManageTimeOff(role: UserRole): boolean {
+  return role === 'admin' || role === 'developer'
+}
+
+export function canManagePd(role: UserRole): boolean {
+  return hasPermission(role, '*') || hasPermission(role, 'pd.manage')
+}
+
+export function canManageCoaching(role: UserRole): boolean {
+  return hasPermission(role, '*') || hasPermission(role, 'coaching.manage')
+}
+
+export function canViewAllCoachingCycles(role: UserRole): boolean {
+  return hasPermission(role, '*') || role === 'regional_manager'
+}
+
 export const roleLabels: Record<UserRole, string> = {
   admin: 'Administrator',
   regional_manager: 'Regional Manager',

@@ -25,6 +25,10 @@ export type CertificationStatus = 'active' | 'expiring' | 'expired'
 export type CertificationRenewalStatus = 'pending' | 'approved' | 'rejected'
 export type PartnerType = 'consultant' | 'vendor'
 export type PartnerStatus = 'active' | 'inactive'
+export type TimeOffType = 'absence' | 'vacation'
+export type RequestStatus = 'pending' | 'approved' | 'denied' | 'cancelled'
+export type ItTicketPriority = 'low' | 'normal' | 'high' | 'urgent'
+export type ItTicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 export type CalendarEventType =
   | 'pd'
   | 'coaching'
@@ -83,6 +87,41 @@ export interface Profile {
 
 export interface PartnerUser extends Profile {
   partner_name: string | null
+}
+
+export interface TimeOffRequest {
+  id: string
+  user_id: string
+  partner_id: string
+  submitted_by: string
+  type: TimeOffType
+  start_date: string
+  end_date: string
+  reason: string
+  status: RequestStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  review_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TimeOffRequestWithDetails extends TimeOffRequest {
+  employee_name: string | null
+  submitter_name: string | null
+  partner_name: string | null
+  reviewer_name: string | null
+}
+
+export interface ItTicket {
+  id: string
+  user_id: string
+  subject: string
+  description: string
+  priority: ItTicketPriority
+  status: ItTicketStatus
+  created_at: string
+  updated_at: string
 }
 
 export interface GrowthPlan {
