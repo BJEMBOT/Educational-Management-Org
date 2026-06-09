@@ -1,4 +1,4 @@
-# EMO Platform
+# EdManagementOrg Platform
 
 Education Management Organization platform for portfolio oversight, professional development, instructional coaching, and school operations across a K-12 network.
 
