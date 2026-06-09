@@ -7,6 +7,7 @@ export const roleLabels: Record<UserRole, string> = {
   teacher: 'Teacher',
   coach: 'Coach',
   consultant: 'Consultant',
+  partner: 'Partner',
   parent: 'Parent',
   board_member: 'Board Member',
   developer: 'Developer',

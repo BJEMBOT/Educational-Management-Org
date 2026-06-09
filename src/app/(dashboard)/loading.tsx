@@ -1,5 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import {
+  DashboardMetricsSkeleton,
+  DashboardPanelsSkeleton,
+} from '@/components/dashboard/dashboard-skeletons'
 
 export default function DashboardLoading() {
   return (
@@ -8,19 +11,13 @@ export default function DashboardLoading() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-12" />
-            </CardContent>
-          </Card>
+      <DashboardMetricsSkeleton count={6} />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-28 rounded-md" />
         ))}
       </div>
-      <Skeleton className="h-64 w-full rounded-lg" />
+      <DashboardPanelsSkeleton count={4} />
     </div>
   )
 }

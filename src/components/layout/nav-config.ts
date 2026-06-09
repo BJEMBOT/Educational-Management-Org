@@ -51,6 +51,12 @@ export const navSections: NavSection[] = [
         icon: LayoutDashboard,
         roles: ['teacher', 'coach', 'consultant', 'parent'],
       },
+      {
+        href: '/partners',
+        label: 'My Organization',
+        icon: Handshake,
+        roles: ['partner'],
+      },
     ],
   },
   {
@@ -103,6 +109,7 @@ export const navSections: NavSection[] = [
           'coach',
           'consultant',
           'developer',
+          'partner',
         ],
       },
       {
@@ -128,7 +135,26 @@ export const navSections: NavSection[] = [
         href: '/partners',
         label: 'Partners',
         icon: Handshake,
-        roles: ['admin', 'regional_manager', 'staff', 'board_member', 'developer'],
+        roles: [
+          'admin',
+          'regional_manager',
+          'staff',
+          'board_member',
+          'developer',
+          'partner',
+        ],
+      },
+      {
+        href: '/partners/employees',
+        label: 'Employees',
+        icon: Handshake,
+        roles: ['admin', 'developer', 'partner'],
+      },
+      {
+        href: '/partners/administrators',
+        label: 'Administrators',
+        icon: Handshake,
+        roles: ['admin', 'developer', 'partner'],
       },
     ],
   },
@@ -147,6 +173,7 @@ export const navSections: NavSection[] = [
           'coach',
           'consultant',
           'developer',
+          'partner',
         ],
       },
       {
@@ -161,6 +188,7 @@ export const navSections: NavSection[] = [
           'coach',
           'consultant',
           'developer',
+          'partner',
         ],
       },
     ],
@@ -227,6 +255,13 @@ export const navSections: NavSection[] = [
     ],
   },
 ]
+
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === '#') return false
+  if (href === '/') return pathname === '/'
+  if (href === '/partners') return pathname === '/partners'
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 export function getNavForRole(role: UserRole): NavSection[] {
   return navSections

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Building2, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getNavForRole } from '@/components/layout/nav-config'
+import { getNavForRole, isNavItemActive } from '@/components/layout/nav-config'
 import { NavLink } from '@/components/layout/nav-link'
 import { FinanceLockDialog } from '@/components/layout/finance-lock-dialog'
 import { Badge } from '@/components/ui/badge'
@@ -66,9 +66,7 @@ export function AppSidebar({ role }: { role: UserRole }) {
                   const isActive =
                     !item.disabled &&
                     !isLockedSection &&
-                    (item.href === '/'
-                      ? pathname === '/'
-                      : item.href !== '#' && pathname.startsWith(item.href))
+                    isNavItemActive(pathname, item.href)
 
                   if (isLockedSection) {
                     return (
@@ -132,10 +130,7 @@ export function MobileNav({ role }: { role: UserRole }) {
   return (
     <nav className="flex gap-1 overflow-x-auto border-b bg-background px-2 py-1.5 md:hidden">
       {items.map((item) => {
-        const isActive =
-          item.href === '/'
-            ? pathname === '/'
-            : pathname.startsWith(item.href)
+        const isActive = isNavItemActive(pathname, item.href)
         return (
           <NavLink
             key={item.label}

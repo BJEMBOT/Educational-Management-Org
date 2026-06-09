@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import {
   computeOnTrackPercent,
@@ -28,7 +29,27 @@ export async function getSchoolById(id: string): Promise<School | null> {
   return data
 }
 
-export async function getSchoolsWithGoalStats(): Promise<SchoolWithStats[]> {
+export function summarizeSchools(schools: SchoolWithStats[]) {
+  return {
+    totalSchools: schools.length,
+    healthyCount: schools.filter((s) => s.healthStatus === 'healthy').length,
+    atRiskCount: schools.filter((s) => s.healthStatus === 'at_risk').length,
+    offTrackCount: schools.filter((s) => s.healthStatus === 'off_track').length,
+    openInterventions: schools.reduce((sum, s) => sum + s.openInterventions, 0),
+  }
+}
+
+export function pickSchoolsNeedingAttention(
+  schools: SchoolWithStats[],
+  limit = 5
+): SchoolWithStats[] {
+  return schools
+    .filter((s) => s.healthStatus !== 'healthy')
+    .sort((a, b) => a.onTrackPercent - b.onTrackPercent)
+    .slice(0, limit)
+}
+
+export const getSchoolsWithGoalStats = cache(async (): Promise<SchoolWithStats[]> => {
   const supabase = await createClient()
 
   const [schoolsRes, goalsRes, interventionsRes] = await Promise.all([
@@ -72,7 +93,7 @@ export async function getSchoolsWithGoalStats(): Promise<SchoolWithStats[]> {
       openInterventions: openInterventionsBySchool.get(school.id) ?? 0,
     }
   })
-}
+})
 
 export async function getSchoolDetail(id: string) {
   const supabase = await createClient()
@@ -110,19 +131,10 @@ export async function getSchoolsNeedingAttention(
   limit = 5
 ): Promise<SchoolWithStats[]> {
   const schools = await getSchoolsWithGoalStats()
-  return schools
-    .filter((s) => s.healthStatus !== 'healthy')
-    .sort((a, b) => a.onTrackPercent - b.onTrackPercent)
-    .slice(0, limit)
+  return pickSchoolsNeedingAttention(schools, limit)
 }
 
 export async function getDashboardSummary() {
   const schools = await getSchoolsWithGoalStats()
-  return {
-    totalSchools: schools.length,
-    healthyCount: schools.filter((s) => s.healthStatus === 'healthy').length,
-    atRiskCount: schools.filter((s) => s.healthStatus === 'at_risk').length,
-    offTrackCount: schools.filter((s) => s.healthStatus === 'off_track').length,
-    openInterventions: schools.reduce((sum, s) => sum + s.openInterventions, 0),
-  }
+  return summarizeSchools(schools)
 }

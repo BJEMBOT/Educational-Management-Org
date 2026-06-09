@@ -21,6 +21,8 @@ const pathLabels: Record<string, string> = {
   pd: 'PD Catalog',
   certifications: 'Certifications',
   partners: 'Partners',
+  employees: 'Employees',
+  administrators: 'Administrators',
   calendar: 'Calendar',
   messages: 'Messages',
   curriculum: 'Curriculum',

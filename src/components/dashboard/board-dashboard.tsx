@@ -1,17 +1,12 @@
-import {
-  getDashboardSummary,
-  getSchoolsWithGoalStats,
-} from '@/lib/queries/schools'
+import { getSchoolsWithGoalStats, summarizeSchools } from '@/lib/queries/schools'
 import { SchoolsTable } from '@/components/schools/schools-table'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
 import { Building2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
 
 export async function BoardDashboard() {
-  const [schools, summary] = await Promise.all([
-    getSchoolsWithGoalStats(),
-    getDashboardSummary(),
-  ])
+  const schools = await getSchoolsWithGoalStats()
+  const summary = summarizeSchools(schools)
 
   return (
     <div className="space-y-6">

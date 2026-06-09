@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { Sprout, Users, BookOpen, Award } from 'lucide-react'
-import { getGrowthPlanSummary, getGrowthPlans } from '@/lib/queries/growth-plans'
+import { getGrowthPlans, summarizeGrowthPlans } from '@/lib/queries/growth-plans'
 import { getCoachingCycles } from '@/lib/queries/coaching'
 import { getUserRegistrations, getCertifications } from '@/lib/queries/pd'
 import { PageHeader } from '@/components/ui/page-header'
@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button'
 import type { Profile } from '@/lib/database.types'
 
 export async function TeacherWorkspace({ profile }: { profile: Profile }) {
-  const [planSummary, plans, cycles, registrations, certs] = await Promise.all([
-    getGrowthPlanSummary(profile.id),
+  const [plans, cycles, registrations, certs] = await Promise.all([
     getGrowthPlans(profile.id),
     getCoachingCycles({ teacherId: profile.id }),
     getUserRegistrations(profile.id),
     getCertifications(profile.id),
   ])
+
+  const planSummary = summarizeGrowthPlans(plans)
 
   const activeCycle = cycles.find((c) => c.status === 'active')
   const upcomingPd = registrations.filter((r) => r.status === 'registered').slice(0, 3)

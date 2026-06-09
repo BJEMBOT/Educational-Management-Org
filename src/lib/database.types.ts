@@ -8,9 +8,11 @@ export type UserRole =
   | 'teacher'
   | 'coach'
   | 'consultant'
+  | 'partner'
   | 'parent'
   | 'board_member'
   | 'developer'
+export type PartnerUserType = 'employee' | 'administrator'
 export type RevenueSource = 'contract' | 'pd' | 'consulting' | 'grant' | 'other'
 export type SchoolHealth = 'healthy' | 'at_risk' | 'off_track'
 export type GrowthPlanStatus = 'draft' | 'active' | 'completed'
@@ -74,7 +76,13 @@ export interface Profile {
   id: string
   name: string | null
   role: UserRole
+  partner_id: string | null
+  partner_user_type: PartnerUserType | null
   created_at: string
+}
+
+export interface PartnerUser extends Profile {
+  partner_name: string | null
 }
 
 export interface GrowthPlan {

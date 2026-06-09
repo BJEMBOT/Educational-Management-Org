@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Users, Eye, BookOpen } from 'lucide-react'
-import { getCoachingCycles, getCoachingSummary } from '@/lib/queries/coaching'
-import { getPdSummary } from '@/lib/queries/pd'
+import { getCoachingCycles, summarizeCoachingCycles } from '@/lib/queries/coaching'
+import { getPdDashboardSnapshot } from '@/lib/queries/pd'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
 import { Badge } from '@/components/ui/badge'
@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button'
 import type { Profile } from '@/lib/database.types'
 
 export async function CoachWorkspace({ profile }: { profile: Profile }) {
-  const [summary, cycles, pdSummary] = await Promise.all([
-    getCoachingSummary(profile.id),
+  const [cycles, pdSnapshot] = await Promise.all([
     getCoachingCycles({ coachId: profile.id }),
-    getPdSummary(),
+    getPdDashboardSnapshot(),
   ])
+
+  const summary = summarizeCoachingCycles(cycles)
 
   const activeCycles = cycles.filter((c) => c.status === 'active')
 
@@ -32,7 +33,7 @@ export async function CoachWorkspace({ profile }: { profile: Profile }) {
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard label="Active Cycles" value={summary.active} icon={Users} accent="primary" />
         <MetricCard label="Teachers Supported" value={summary.teachers} icon={Users} accent="success" />
-        <MetricCard label="Upcoming PD Events" value={pdSummary.upcoming} icon={BookOpen} accent="default" />
+        <MetricCard label="Upcoming PD Events" value={pdSnapshot.summary.upcoming} icon={BookOpen} accent="default" />
       </div>
 
       <div className="rounded-lg border bg-card shadow-sm">

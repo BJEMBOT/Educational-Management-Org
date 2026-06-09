@@ -17,6 +17,7 @@ const MESSAGE_ROLES = [
   'coach',
   'consultant',
   'developer',
+  'partner',
 ]
 
 export default async function MessagesPage() {

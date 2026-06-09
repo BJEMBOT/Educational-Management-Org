@@ -22,15 +22,45 @@ export async function getPdEvents(): Promise<PdEventWithCount[]> {
 
   if (error) throw error
 
-  return Promise.all(
-    (data ?? []).map(async (event) => {
-      const { count } = await supabase
-        .from('pd_registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_id', event.id)
-      return { ...(event as PdEvent), registration_count: count ?? 0 }
-    })
-  )
+  const events = (data ?? []) as PdEvent[]
+  if (events.length === 0) return []
+
+  const { data: registrations, error: regError } = await supabase
+    .from('pd_registrations')
+    .select('event_id')
+
+  if (regError) throw regError
+
+  const countByEvent = new Map<string, number>()
+  for (const row of registrations ?? []) {
+    countByEvent.set(row.event_id, (countByEvent.get(row.event_id) ?? 0) + 1)
+  }
+
+  return events.map((event) => ({
+    ...event,
+    registration_count: countByEvent.get(event.id) ?? 0,
+  }))
+}
+
+export async function getPdDashboardSnapshot() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('pd_events')
+    .select('id, title, start_date, credit_hours, status')
+    .order('start_date', { ascending: true })
+
+  if (error) throw error
+
+  const events = data ?? []
+  const scheduled = events.filter((e) => e.status === 'scheduled')
+
+  return {
+    summary: {
+      upcoming: scheduled.length,
+      totalCredits: events.reduce((sum, e) => sum + Number(e.credit_hours), 0),
+    },
+    upcoming: scheduled.slice(0, 3),
+  }
 }
 
 export async function getPdEventById(id: string) {
@@ -177,9 +207,6 @@ export async function getPendingCertificationRenewals() {
 export { CERT_EXPIRY_WARNING_DAYS, computeCertificationStatus }
 
 export async function getPdSummary() {
-  const events = await getPdEvents()
-  return {
-    upcoming: events.filter((e) => e.status === 'scheduled').length,
-    totalCredits: events.reduce((s, e) => s + Number(e.credit_hours), 0),
-  }
+  const { summary } = await getPdDashboardSnapshot()
+  return summary
 }

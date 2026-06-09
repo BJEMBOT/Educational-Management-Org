@@ -16,6 +16,8 @@ export default async function WorkspacePage() {
       return <ParentWorkspace profile={profile} />
     case 'teacher':
       return <TeacherWorkspace profile={profile} />
+    case 'partner':
+      redirect('/partners')
     default:
       redirect('/')
   }

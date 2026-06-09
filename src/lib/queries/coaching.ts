@@ -33,22 +33,34 @@ export async function getCoachingCycles(filters?: {
 
   const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.name ?? 'Unknown']))
 
-  return Promise.all(
-    cycles.map(async (c) => {
-      const row = c as CoachingCycle & { schools: { name: string } }
-      const { count } = await supabase
-        .from('observations')
-        .select('*', { count: 'exact', head: true })
-        .eq('cycle_id', row.id)
-      return {
-        ...row,
-        school_name: row.schools.name,
-        coach_name: nameMap.get(row.coach_id) ?? 'Unknown',
-        teacher_name: nameMap.get(row.teacher_id) ?? 'Unknown',
-        observation_count: count ?? 0,
-      }
-    })
-  )
+  const cycleIds = cycles.map((c) => c.id)
+  const observationCountByCycle = new Map<string, number>()
+
+  if (cycleIds.length > 0) {
+    const { data: observations, error: obsError } = await supabase
+      .from('observations')
+      .select('cycle_id')
+      .in('cycle_id', cycleIds)
+
+    if (obsError) throw obsError
+    for (const obs of observations ?? []) {
+      observationCountByCycle.set(
+        obs.cycle_id,
+        (observationCountByCycle.get(obs.cycle_id) ?? 0) + 1
+      )
+    }
+  }
+
+  return cycles.map((c) => {
+    const row = c as CoachingCycle & { schools: { name: string } }
+    return {
+      ...row,
+      school_name: row.schools.name,
+      coach_name: nameMap.get(row.coach_id) ?? 'Unknown',
+      teacher_name: nameMap.get(row.teacher_id) ?? 'Unknown',
+      observation_count: observationCountByCycle.get(row.id) ?? 0,
+    }
+  })
 }
 
 export async function getCoachingCycleById(id: string) {
@@ -89,13 +101,19 @@ export async function getCoachingCycleById(id: string) {
   }
 }
 
-export async function getCoachingSummary(coachId: string) {
-  const cycles = await getCoachingCycles({ coachId })
+export function summarizeCoachingCycles(
+  cycles: Awaited<ReturnType<typeof getCoachingCycles>>
+) {
   return {
     active: cycles.filter((c) => c.status === 'active').length,
     total: cycles.length,
     teachers: new Set(cycles.map((c) => c.teacher_id)).size,
   }
+}
+
+export async function getCoachingSummary(coachId: string) {
+  const cycles = await getCoachingCycles({ coachId })
+  return summarizeCoachingCycles(cycles)
 }
 
 export async function getProfilesByRole(role: string) {

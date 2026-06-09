@@ -3,16 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/queries/profile'
-import { hasPermission } from '@/lib/permissions'
+import { canManagePartners } from '@/lib/permissions'
 import type { PartnerStatus, PartnerType } from '@/lib/database.types'
 
 async function requirePartnerManage() {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' as const, profile: null }
-  const canManage =
-    hasPermission(profile.role, '*') ||
-    profile.role === 'admin' ||
-    profile.role === 'regional_manager'
+  const canManage = canManagePartners(profile.role)
   if (!canManage) return { error: 'Only administrators can manage partners.' as const, profile: null }
   return { error: null, profile }
 }
@@ -60,6 +57,8 @@ export async function createPartner(data: {
   }
 
   revalidatePath('/partners')
+  revalidatePath('/partners/employees')
+  revalidatePath('/partners/administrators')
   return { success: true, id: partner.id }
 }
 
@@ -98,6 +97,21 @@ export async function updatePartner(
   }
 
   revalidatePath('/partners')
+  revalidatePath('/partners/employees')
+  revalidatePath('/partners/administrators')
+  return { success: true }
+}
+
+export async function setPartnerStatus(id: string, status: PartnerStatus) {
+  const { error: permError } = await requirePartnerManage()
+  if (permError) return { error: permError }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('partners').update({ status }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/partners')
+  revalidatePath('/partners/employees')
+  revalidatePath('/partners/administrators')
   return { success: true }
 }
 
@@ -109,5 +123,7 @@ export async function deletePartner(id: string) {
   const { error } = await supabase.from('partners').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/partners')
+  revalidatePath('/partners/employees')
+  revalidatePath('/partners/administrators')
   return { success: true }
 }

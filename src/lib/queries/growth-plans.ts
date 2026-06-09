@@ -20,25 +20,33 @@ export async function getGrowthPlans(userId?: string): Promise<GrowthPlanWithDet
   if (error) throw error
 
   const plans = data ?? []
-  const withCounts = await Promise.all(
-    plans.map(async (p) => {
-      const row = p as GrowthPlan & {
-        schools: { name: string }
-        profiles: { name: string | null }
-      }
-      const { count } = await supabase
-        .from('growth_plan_goals')
-        .select('*', { count: 'exact', head: true })
-        .eq('plan_id', row.id)
-      return {
-        ...row,
-        school_name: row.schools.name,
-        user_name: row.profiles.name ?? 'Unknown',
-        goal_count: count ?? 0,
-      }
-    })
-  )
-  return withCounts
+  const planIds = plans.map((p) => p.id)
+
+  const goalCountByPlan = new Map<string, number>()
+  if (planIds.length > 0) {
+    const { data: goals, error: goalsError } = await supabase
+      .from('growth_plan_goals')
+      .select('plan_id')
+      .in('plan_id', planIds)
+
+    if (goalsError) throw goalsError
+    for (const goal of goals ?? []) {
+      goalCountByPlan.set(goal.plan_id, (goalCountByPlan.get(goal.plan_id) ?? 0) + 1)
+    }
+  }
+
+  return plans.map((p) => {
+    const row = p as GrowthPlan & {
+      schools: { name: string }
+      profiles: { name: string | null }
+    }
+    return {
+      ...row,
+      school_name: row.schools.name,
+      user_name: row.profiles.name ?? 'Unknown',
+      goal_count: goalCountByPlan.get(row.id) ?? 0,
+    }
+  })
 }
 
 export async function getGrowthPlanById(id: string) {
@@ -85,9 +93,17 @@ export async function getGrowthPlanById(id: string) {
   }
 }
 
+export function summarizeGrowthPlans(
+  plans: Awaited<ReturnType<typeof getGrowthPlans>>
+) {
+  return {
+    total: plans.length,
+    active: plans.filter((p) => p.status === 'active').length,
+    completed: plans.filter((p) => p.status === 'completed').length,
+  }
+}
+
 export async function getGrowthPlanSummary(userId: string) {
   const plans = await getGrowthPlans(userId)
-  const active = plans.filter((p) => p.status === 'active').length
-  const completed = plans.filter((p) => p.status === 'completed').length
-  return { total: plans.length, active, completed }
+  return summarizeGrowthPlans(plans)
 }
