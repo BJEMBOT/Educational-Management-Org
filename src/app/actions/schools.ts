@@ -2,12 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { requireSystemManager } from '@/lib/action-auth'
 
 export async function createSchool(formData: {
   name: string
   district: string
   enrollment: number
 }) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('schools').insert([formData])
 
@@ -21,6 +25,9 @@ export async function updateSchool(
   id: string,
   formData: { name: string; district: string; enrollment: number }
 ) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('schools').update(formData).eq('id', id)
 
@@ -32,6 +39,9 @@ export async function updateSchool(
 }
 
 export async function deleteSchool(id: string) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('schools').delete().eq('id', id)
 

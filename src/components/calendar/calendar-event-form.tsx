@@ -22,6 +22,7 @@ import type { CalendarEventType, School } from '@/lib/database.types'
 const typeLabels: Record<CalendarEventType, string> = {
   pd: 'Professional Development',
   coaching: 'Coaching',
+  evaluation: 'Teacher Evaluation',
   intervention: 'Intervention',
   meeting: 'Meeting',
   deadline: 'Deadline',

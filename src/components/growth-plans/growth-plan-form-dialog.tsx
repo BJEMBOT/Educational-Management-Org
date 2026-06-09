@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createGrowthPlan } from '@/app/actions/growth-plans'
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTriggerButton }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { schoolSelectOptions } from '@/lib/select-options'
 import type { School } from '@/lib/database.types'
 
 export function GrowthPlanFormDialog({
@@ -26,6 +27,7 @@ export function GrowthPlanFormDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [schoolId, setSchoolId] = useState('')
+  const schoolOptions = useMemo(() => schoolSelectOptions(schools), [schools])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -55,11 +57,19 @@ export function GrowthPlanFormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>School</Label>
-            <Select value={schoolId} onValueChange={(v) => v && setSchoolId(v)}>
-              <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+            <Select
+              value={schoolId}
+              onValueChange={(v) => v && setSchoolId(v)}
+              items={schoolOptions}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select school" />
+              </SelectTrigger>
               <SelectContent>
-                {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                {schoolOptions.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

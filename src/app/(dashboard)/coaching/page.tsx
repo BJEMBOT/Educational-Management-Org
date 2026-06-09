@@ -1,27 +1,35 @@
-import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getCurrentProfile } from '@/lib/queries/profile'
-import { getCoachingCycles, getProfilesByRole } from '@/lib/queries/coaching'
+import {
+  getCoachProfiles,
+  getCoachingCycles,
+  getProfilesByRole,
+} from '@/lib/queries/coaching'
 import { getSchools } from '@/lib/queries/schools'
 import {
+  canDeleteScheduledRecords,
   canManageCoaching,
   canViewAllCoachingCycles,
 } from '@/lib/permissions'
 import { CoachingCycleForm } from '@/components/coaching/coaching-cycle-form'
+import { CoachingCyclesTable } from '@/components/coaching/coaching-cycles-table'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTableWrapper } from '@/components/ui/data-table-wrapper'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export default async function CoachingPage() {
   const profile = await getCurrentProfile()
   const canCreate = profile ? canManageCoaching(profile.role) : false
+  const canDelete = profile ? canDeleteScheduledRecords(profile.role) : false
   const viewAll = profile ? canViewAllCoachingCycles(profile.role) : false
   const isCoach =
     profile?.role === 'coach' || profile?.role === 'consultant'
   const isTeacher = profile?.role === 'teacher'
+  const showCoachPicker =
+    profile?.role === 'admin' ||
+    profile?.role === 'developer' ||
+    profile?.role === 'regional_manager'
 
-  const [cycles, schools, teachers] = await Promise.all([
+  const [cycles, schools, teachers, coaches] = await Promise.all([
     getCoachingCycles(
       viewAll
         ? undefined
@@ -33,7 +41,13 @@ export default async function CoachingPage() {
     ),
     getSchools(),
     getProfilesByRole('teacher'),
+    getCoachProfiles(),
   ])
+
+  const defaultCoachId =
+    isCoach && profile
+      ? profile.id
+      : coaches[0]?.id ?? profile?.id ?? ''
 
   return (
     <div className="space-y-6">
@@ -45,7 +59,9 @@ export default async function CoachingPage() {
             <CoachingCycleForm
               schools={schools}
               teachers={teachers}
-              coachId={profile.id}
+              coaches={coaches}
+              defaultCoachId={defaultCoachId}
+              showCoachPicker={showCoachPicker}
               trigger={
                 <>
                   <Plus className="mr-2 h-4 w-4" />
@@ -58,44 +74,7 @@ export default async function CoachingPage() {
       />
 
       <DataTableWrapper>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Teacher</TableHead>
-              <TableHead>Coach</TableHead>
-              <TableHead>School</TableHead>
-              <TableHead>Focus</TableHead>
-              <TableHead className="text-right">Observations</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cycles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                  No coaching cycles yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              cycles.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>
-                    <Link href={`/coaching/${c.id}`} className="font-medium hover:underline">
-                      {c.teacher_name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{c.coach_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.school_name}</TableCell>
-                  <TableCell>{c.focus_area}</TableCell>
-                  <TableCell className="text-right">{c.observation_count}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize">{c.status}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <CoachingCyclesTable cycles={cycles} canDelete={canDelete} />
       </DataTableWrapper>
     </div>
   )

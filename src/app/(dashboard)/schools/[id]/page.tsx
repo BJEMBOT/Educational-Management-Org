@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Plus } from 'lucide-react'
+import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManageSystemRecords } from '@/lib/permissions'
 import { getSchoolDetail } from '@/lib/queries/schools'
 import { getSchools } from '@/lib/queries/schools'
 import { SchoolStatusBadge } from '@/components/schools/school-status-badge'
@@ -25,6 +27,8 @@ export default async function SchoolDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const profile = await getCurrentProfile()
+  const canManage = profile ? canManageSystemRecords(profile.role) : false
   const [detail, schools] = await Promise.all([
     getSchoolDetail(id),
     getSchools(),
@@ -63,7 +67,7 @@ export default async function SchoolDetailPage({
             {school.district} · {school.enrollment.toLocaleString()} students
           </p>
         </div>
-        <SchoolDetailActions school={school} />
+        {canManage && <SchoolDetailActions school={school} />}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -125,40 +129,45 @@ export default async function SchoolDetailPage({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Goals</h2>
-          <GoalFormDialog
-            schools={schools}
-            defaultSchoolId={school.id}
-            triggerSize="sm"
-            trigger={
-              <>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Goal
-              </>
-            }
-          />
+          {canManage && (
+            <GoalFormDialog
+              schools={schools}
+              defaultSchoolId={school.id}
+              triggerSize="sm"
+              trigger={
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Goal
+                </>
+              }
+            />
+          )}
         </div>
         <GoalsTable
           goals={goalsWithSchool}
           schools={schools}
           showSchoolColumn={false}
           showExport={false}
+          canManage={canManage}
         />
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Interventions</h2>
-          <InterventionFormDialog
-            schools={schools}
-            defaultSchoolId={school.id}
-            triggerSize="sm"
-            trigger={
-              <>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Intervention
-              </>
-            }
-          />
+          {canManage && (
+            <InterventionFormDialog
+              schools={schools}
+              defaultSchoolId={school.id}
+              triggerSize="sm"
+              trigger={
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Intervention
+                </>
+              }
+            />
+          )}
         </div>
         <InterventionsTable
           interventions={interventions.map((i) => ({
@@ -167,6 +176,7 @@ export default async function SchoolDetailPage({
           }))}
           schools={schools}
           showSchoolColumn={false}
+          canManage={canManage}
         />
       </div>
     </div>

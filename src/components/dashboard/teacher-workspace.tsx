@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { Sprout, Users, BookOpen, Award } from 'lucide-react'
+import { Sprout, Users, BookOpen, Award, ClipboardCheck } from 'lucide-react'
 import { getGrowthPlans, summarizeGrowthPlans } from '@/lib/queries/growth-plans'
-import { getCoachingCycles } from '@/lib/queries/coaching'
+import { getCoachingCycles, getNextCheckInForTeacher } from '@/lib/queries/coaching'
+import { getActiveEvaluationForTeacher } from '@/lib/queries/evaluations'
+import { EvaluationRatingBadge, EvaluationStatusBadge } from '@/components/evaluations/evaluation-status-badge'
+import { frequencyLabels } from '@/lib/coaching-schedule'
 import { getUserRegistrations, getCertifications } from '@/lib/queries/pd'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
@@ -11,12 +14,15 @@ import { Button } from '@/components/ui/button'
 import type { Profile } from '@/lib/database.types'
 
 export async function TeacherWorkspace({ profile }: { profile: Profile }) {
-  const [plans, cycles, registrations, certs] = await Promise.all([
-    getGrowthPlans(profile.id),
-    getCoachingCycles({ teacherId: profile.id }),
-    getUserRegistrations(profile.id),
-    getCertifications(profile.id),
-  ])
+  const [plans, cycles, registrations, certs, nextCheckIn, activeEvaluation] =
+    await Promise.all([
+      getGrowthPlans(profile.id),
+      getCoachingCycles({ teacherId: profile.id }),
+      getUserRegistrations(profile.id),
+      getCertifications(profile.id),
+      getNextCheckInForTeacher(profile.id),
+      getActiveEvaluationForTeacher(profile.id),
+    ])
 
   const planSummary = summarizeGrowthPlans(plans)
 
@@ -66,12 +72,53 @@ export async function TeacherWorkspace({ profile }: { profile: Profile }) {
         </div>
 
         <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading text-base font-semibold">Teacher Evaluation</h3>
+            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {activeEvaluation ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm">
+                <span className="text-muted-foreground">School year:</span>{' '}
+                {activeEvaluation.school_year}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeEvaluation.framework_name} · Evaluator:{' '}
+                {activeEvaluation.evaluator_name}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <EvaluationStatusBadge status={activeEvaluation.status} />
+                <EvaluationRatingBadge rating={activeEvaluation.overall_rating} />
+              </div>
+              <Link href={`/evaluations/${activeEvaluation.id}`} className="mt-2 inline-block">
+                <Button size="sm" variant="outline">
+                  View evaluation
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No active evaluation cycle assigned.
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
           <h3 className="font-heading text-base font-semibold">Latest Coaching Feedback</h3>
           {activeCycle ? (
             <div className="mt-3 space-y-2">
               <p className="text-sm"><span className="text-muted-foreground">Coach:</span> {activeCycle.coach_name}</p>
               <p className="text-sm"><span className="text-muted-foreground">Focus:</span> {activeCycle.focus_area}</p>
-              <p className="text-sm text-muted-foreground">{activeCycle.observation_count} observations logged</p>
+              <p className="text-sm text-muted-foreground">
+                {frequencyLabels[activeCycle.check_in_frequency]} check-ins ·{' '}
+                {activeCycle.observation_count} observations logged
+              </p>
+              {nextCheckIn && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Next check-in:</span>{' '}
+                  {format(new Date(nextCheckIn.scheduled_at), 'MMM d, yyyy · h:mm a')}
+                </p>
+              )}
               <Link href={`/coaching/${activeCycle.id}`} className="mt-2 inline-block">
                 <Button size="sm" variant="outline">View Cycle</Button>
               </Link>

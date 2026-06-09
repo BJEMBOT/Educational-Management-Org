@@ -45,6 +45,16 @@ function DialogTriggerButton({
   children,
   ...props
 }: DialogPrimitive.Trigger.Props & VariantProps<typeof dialogTriggerVariants>) {
+  if (React.isValidElement(children) && children.type === Button) {
+    return (
+      <DialogPrimitive.Trigger
+        data-slot="dialog-trigger"
+        render={children}
+        {...props}
+      />
+    )
+  }
+
   return (
     <DialogPrimitive.Trigger
       data-slot="dialog-trigger"

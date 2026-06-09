@@ -16,14 +16,15 @@ import {
   DollarSign,
   Calendar,
   MessageSquare,
+  ClipboardCheck,
 } from 'lucide-react'
-import type { UserRole } from '@/lib/database.types'
+import { isNavVisibleForView, type AppView } from '@/lib/app-views'
 
 export interface NavItem {
   href: string
   label: string
   icon: LucideIcon
-  roles: UserRole[]
+  views: AppView[]
   badge?: string
   disabled?: boolean
   external?: boolean
@@ -43,19 +44,19 @@ export const navSections: NavSection[] = [
         href: '/',
         label: 'Dashboard',
         icon: LayoutDashboard,
-        roles: ['admin', 'regional_manager', 'staff', 'board_member', 'developer'],
+        views: ['admin', 'staff'],
       },
       {
         href: '/workspace',
         label: 'My Workspace',
         icon: LayoutDashboard,
-        roles: ['teacher', 'coach', 'consultant', 'parent'],
+        views: ['teacher'],
       },
       {
         href: '/partners',
         label: 'My Organization',
         icon: Handshake,
-        roles: ['partner'],
+        views: ['partner'],
       },
     ],
   },
@@ -66,19 +67,19 @@ export const navSections: NavSection[] = [
         href: '/schools',
         label: 'School Portfolio',
         icon: Building2,
-        roles: ['admin', 'regional_manager', 'staff', 'developer'],
+        views: ['admin', 'staff'],
       },
       {
         href: '/goals',
         label: 'Goals',
         icon: Target,
-        roles: ['admin', 'regional_manager', 'staff', 'board_member', 'developer'],
+        views: ['admin', 'staff'],
       },
       {
         href: '/interventions',
         label: 'Interventions',
         icon: AlertTriangle,
-        roles: ['admin', 'regional_manager', 'staff', 'board_member', 'developer'],
+        views: ['admin', 'staff'],
       },
     ],
   },
@@ -89,42 +90,31 @@ export const navSections: NavSection[] = [
         href: '/growth-plans',
         label: 'Growth Plans',
         icon: Sprout,
-        roles: ['admin', 'regional_manager', 'teacher', 'coach', 'consultant', 'developer'],
+        views: ['admin', 'staff', 'teacher'],
       },
       {
         href: '/coaching',
         label: 'Coaching',
         icon: Users,
-        roles: ['admin', 'regional_manager', 'coach', 'consultant', 'teacher', 'developer'],
+        views: ['admin', 'staff', 'teacher'],
+      },
+      {
+        href: '/evaluations',
+        label: 'Evaluations',
+        icon: ClipboardCheck,
+        views: ['admin', 'staff'],
       },
       {
         href: '/pd',
         label: 'PD Catalog',
         icon: BookOpen,
-        roles: [
-          'admin',
-          'regional_manager',
-          'staff',
-          'teacher',
-          'coach',
-          'consultant',
-          'developer',
-          'partner',
-        ],
+        views: ['admin', 'staff', 'teacher', 'partner'],
       },
       {
         href: '/certifications',
         label: 'Certifications',
         icon: Award,
-        roles: [
-          'admin',
-          'regional_manager',
-          'teacher',
-          'coach',
-          'consultant',
-          'staff',
-          'developer',
-        ],
+        views: ['admin', 'staff', 'teacher'],
       },
     ],
   },
@@ -135,26 +125,19 @@ export const navSections: NavSection[] = [
         href: '/partners',
         label: 'Partners',
         icon: Handshake,
-        roles: [
-          'admin',
-          'regional_manager',
-          'staff',
-          'board_member',
-          'developer',
-          'partner',
-        ],
+        views: ['admin', 'staff', 'partner'],
       },
       {
         href: '/partners/employees',
         label: 'Employees',
         icon: Handshake,
-        roles: ['admin', 'developer', 'partner'],
+        views: ['admin', 'partner'],
       },
       {
         href: '/partners/administrators',
         label: 'Administrators',
         icon: Handshake,
-        roles: ['admin', 'developer', 'partner'],
+        views: ['admin', 'partner'],
       },
     ],
   },
@@ -165,31 +148,13 @@ export const navSections: NavSection[] = [
         href: '/calendar',
         label: 'Calendar',
         icon: Calendar,
-        roles: [
-          'admin',
-          'regional_manager',
-          'staff',
-          'teacher',
-          'coach',
-          'consultant',
-          'developer',
-          'partner',
-        ],
+        views: ['admin', 'staff', 'teacher', 'partner'],
       },
       {
         href: '/messages',
         label: 'Messages',
         icon: MessageSquare,
-        roles: [
-          'admin',
-          'regional_manager',
-          'staff',
-          'teacher',
-          'coach',
-          'consultant',
-          'developer',
-          'partner',
-        ],
+        views: ['admin', 'staff', 'teacher', 'partner'],
       },
     ],
   },
@@ -201,7 +166,7 @@ export const navSections: NavSection[] = [
         href: '/revenue',
         label: 'Revenue',
         icon: DollarSign,
-        roles: ['developer'],
+        views: ['admin'],
       },
     ],
   },
@@ -213,15 +178,7 @@ export const navSections: NavSection[] = [
         label: 'Curriculum',
         icon: GraduationCap,
         external: true,
-        roles: [
-          'admin',
-          'regional_manager',
-          'staff',
-          'teacher',
-          'coach',
-          'consultant',
-          'developer',
-        ],
+        views: ['admin', 'staff', 'teacher'],
       },
     ],
   },
@@ -232,7 +189,7 @@ export const navSections: NavSection[] = [
         href: '#',
         label: 'MTSS & IEP',
         icon: Heart,
-        roles: ['admin', 'regional_manager', 'developer'],
+        views: ['admin'],
         badge: 'Soon',
         disabled: true,
       },
@@ -240,7 +197,7 @@ export const navSections: NavSection[] = [
         href: '#',
         label: 'Analytics',
         icon: BarChart3,
-        roles: ['admin', 'regional_manager', 'developer'],
+        views: ['admin'],
         badge: 'Soon',
         disabled: true,
       },
@@ -248,7 +205,7 @@ export const navSections: NavSection[] = [
         href: '#',
         label: 'Community',
         icon: Globe,
-        roles: ['admin', 'developer'],
+        views: ['admin'],
         badge: 'Soon',
         disabled: true,
       },
@@ -263,11 +220,11 @@ export function isNavItemActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function getNavForRole(role: UserRole): NavSection[] {
+export function getNavForView(view: AppView): NavSection[] {
   return navSections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.roles.includes(role)),
+      items: section.items.filter((item) => isNavVisibleForView(item.views, view)),
     }))
     .filter((section) => section.items.length > 0)
 }

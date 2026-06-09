@@ -59,7 +59,11 @@ export function ItTicketDialog({
       return
     }
 
-    toast.success('IT ticket submitted. Our team will follow up shortly.')
+    if ('warning' in result && result.warning) {
+      toast.warning(result.warning)
+    } else {
+      toast.success('IT ticket submitted. Our team will follow up shortly.')
+    }
     setOpen(false)
     setPriority('normal')
     e.currentTarget.reset()

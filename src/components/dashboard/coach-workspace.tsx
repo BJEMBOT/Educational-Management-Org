@@ -1,6 +1,8 @@
 import Link from 'next/link'
-import { Users, Eye, BookOpen } from 'lucide-react'
+import { Users, Eye, BookOpen, ClipboardCheck } from 'lucide-react'
 import { getCoachingCycles, summarizeCoachingCycles } from '@/lib/queries/coaching'
+import { getEvaluationCycles } from '@/lib/queries/evaluations'
+import { EvaluationStatusBadge } from '@/components/evaluations/evaluation-status-badge'
 import { getPdDashboardSnapshot } from '@/lib/queries/pd'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
@@ -9,14 +11,16 @@ import { Button } from '@/components/ui/button'
 import type { Profile } from '@/lib/database.types'
 
 export async function CoachWorkspace({ profile }: { profile: Profile }) {
-  const [cycles, pdSnapshot] = await Promise.all([
+  const [cycles, pdSnapshot, evaluations] = await Promise.all([
     getCoachingCycles({ coachId: profile.id }),
     getPdDashboardSnapshot(),
+    getEvaluationCycles({ evaluatorId: profile.id }),
   ])
 
   const summary = summarizeCoachingCycles(cycles)
 
   const activeCycles = cycles.filter((c) => c.status === 'active')
+  const activeEvaluations = evaluations.filter((e) => e.status === 'active')
 
   return (
     <div className="space-y-6">
@@ -30,11 +34,44 @@ export async function CoachWorkspace({ profile }: { profile: Profile }) {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Active Cycles" value={summary.active} icon={Users} accent="primary" />
         <MetricCard label="Teachers Supported" value={summary.teachers} icon={Users} accent="success" />
+        <MetricCard
+          label="Evaluations"
+          value={activeEvaluations.length}
+          icon={ClipboardCheck}
+          accent="primary"
+          href="/evaluations"
+        />
         <MetricCard label="Upcoming PD Events" value={pdSnapshot.summary.upcoming} icon={BookOpen} accent="default" />
       </div>
+
+      {activeEvaluations.length > 0 && (
+        <div className="rounded-lg border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b px-5 py-4">
+            <h3 className="font-heading text-base font-semibold">Assigned Evaluations</h3>
+            <Link href="/evaluations">
+              <Button size="sm" variant="outline">View all</Button>
+            </Link>
+          </div>
+          <ul className="divide-y">
+            {activeEvaluations.slice(0, 5).map((e) => (
+              <li key={e.id} className="flex items-center justify-between px-5 py-4">
+                <div>
+                  <Link href={`/evaluations/${e.id}`} className="font-medium hover:underline">
+                    {e.teacher_name}
+                  </Link>
+                  <p className="text-sm text-muted-foreground">
+                    {e.school_name} · {e.school_year}
+                  </p>
+                </div>
+                <EvaluationStatusBadge status={e.status} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="rounded-lg border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b px-5 py-4">

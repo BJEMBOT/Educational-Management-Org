@@ -4,17 +4,16 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Building2, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getNavForRole, isNavItemActive } from '@/components/layout/nav-config'
+import { getNavForView, isNavItemActive } from '@/components/layout/nav-config'
+import type { AppView } from '@/lib/app-views'
 import { NavLink } from '@/components/layout/nav-link'
 import { FinanceLockDialog } from '@/components/layout/finance-lock-dialog'
 import { ItTicketDialog } from '@/components/support/it-ticket-dialog'
 import { Badge } from '@/components/ui/badge'
 import { FINANCE_UNLOCK_STORAGE_KEY } from '@/lib/finance-access'
-import type { UserRole } from '@/lib/database.types'
-
-export function AppSidebar({ role }: { role: UserRole }) {
+export function AppSidebar({ view }: { view: AppView }) {
   const pathname = usePathname()
-  const sections = getNavForRole(role)
+  const sections = getNavForView(view)
   const [financeUnlocked, setFinanceUnlocked] = useState(false)
   const [lockDialogOpen, setLockDialogOpen] = useState(false)
 
@@ -129,9 +128,9 @@ export function AppSidebar({ role }: { role: UserRole }) {
   )
 }
 
-export function MobileNav({ role }: { role: UserRole }) {
+export function MobileNav({ view }: { view: AppView }) {
   const pathname = usePathname()
-  const sections = getNavForRole(role)
+  const sections = getNavForView(view)
   const items = sections.flatMap((s) => s.items).filter((i) => !i.disabled).slice(0, 5)
 
   return (

@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { roleLabels } from '@/lib/permissions'
+import { appViewLabels, type AppView } from '@/lib/app-views'
 import { ItTicketDialog } from '@/components/support/it-ticket-dialog'
+import { DeveloperViewToggle } from '@/components/layout/developer-view-toggle'
 import type { Profile } from '@/lib/database.types'
 import Link from 'next/link'
 
@@ -68,9 +69,13 @@ function Breadcrumbs() {
 
 export function AppHeader({
   profile,
+  effectiveView,
+  isDeveloperPreview = false,
   alertCount = 0,
 }: {
   profile: Profile | null
+  effectiveView?: AppView
+  isDeveloperPreview?: boolean
   alertCount?: number
 }) {
   const router = useRouter()
@@ -81,6 +86,10 @@ export function AppHeader({
     router.push('/login')
     router.refresh()
   }
+
+  const displayView = effectiveView ?? 'staff'
+  const isDeveloper = profile?.role === 'developer'
+  const viewLabel = appViewLabels[displayView]
 
   const initials = profile?.name
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -100,6 +109,12 @@ export function AppHeader({
             disabled
           />
         </div>
+        {isDeveloper && (
+          <DeveloperViewToggle
+            effectiveView={displayView}
+            isPreview={isDeveloperPreview}
+          />
+        )}
         <div className="md:hidden">
           <ItTicketDialog compact triggerVariant="ghost" triggerSize="sm" />
         </div>
@@ -119,11 +134,11 @@ export function AppHeader({
             <div className="hidden lg:block">
               <p className="text-xs font-medium leading-none">{profile.name ?? 'User'}</p>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                {roleLabels[profile.role]}
+                {isDeveloperPreview ? `Previewing ${viewLabel}` : viewLabel}
               </p>
             </div>
-            <Badge variant="secondary" className="hidden text-[10px] capitalize xl:inline-flex">
-              {profile.role.replace('_', ' ')}
+            <Badge variant="secondary" className="hidden text-[10px] xl:inline-flex">
+              {viewLabel}
             </Badge>
           </div>
         )}

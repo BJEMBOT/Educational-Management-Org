@@ -44,6 +44,7 @@ interface GoalsTableProps {
   showSchoolColumn?: boolean
   showFilters?: boolean
   showExport?: boolean
+  canManage?: boolean
 }
 
 export function GoalsTable({
@@ -52,6 +53,7 @@ export function GoalsTable({
   showSchoolColumn = true,
   showFilters = true,
   showExport = true,
+  canManage = false,
 }: GoalsTableProps) {
   const router = useRouter()
   const [schoolFilter, setSchoolFilter] = useState<string>('all')
@@ -183,14 +185,14 @@ export function GoalsTable({
               <TableHead className="text-right">Current</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Period</TableHead>
-              <TableHead className="w-10" />
+              {canManage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showSchoolColumn ? 8 : 7}
+                  colSpan={showSchoolColumn ? (canManage ? 8 : 7) : canManage ? 7 : 6}
                   className="text-center text-muted-foreground"
                 >
                   No goals match the selected filters.
@@ -206,60 +208,70 @@ export function GoalsTable({
                   <TableCell>{goal.metric_name}</TableCell>
                   <TableCell className="text-right">{goal.target_value}</TableCell>
                   <TableCell className="text-right">
-                    <Input
-                      type="number"
-                      step="any"
-                      className="h-8 w-20 ml-auto text-right"
-                      defaultValue={goal.current_value}
-                      onBlur={(e) => {
-                        if (Number(e.target.value) !== goal.current_value) {
-                          handleInlineUpdate(goal, 'current_value', e.target.value)
-                        }
-                      }}
-                    />
+                    {canManage ? (
+                      <Input
+                        type="number"
+                        step="any"
+                        className="h-8 w-20 ml-auto text-right"
+                        defaultValue={goal.current_value}
+                        onBlur={(e) => {
+                          if (Number(e.target.value) !== goal.current_value) {
+                            handleInlineUpdate(goal, 'current_value', e.target.value)
+                          }
+                        }}
+                      />
+                    ) : (
+                      goal.current_value
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Select
-                      defaultValue={goal.status}
-                      onValueChange={(v) => v && handleInlineUpdate(goal, 'status', v)}
-                    >
-                      <SelectTrigger className="h-8 w-[120px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="on_track">On Track</SelectItem>
-                        <SelectItem value="at_risk">At Risk</SelectItem>
-                        <SelectItem value="off_track">Off Track</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {canManage ? (
+                      <Select
+                        defaultValue={goal.status}
+                        onValueChange={(v) => v && handleInlineUpdate(goal, 'status', v)}
+                      >
+                        <SelectTrigger className="h-8 w-[120px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="on_track">On Track</SelectItem>
+                          <SelectItem value="at_risk">At Risk</SelectItem>
+                          <SelectItem value="off_track">Off Track</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      goalStatusLabels[goal.status]
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {goal.time_period}
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="ghost" size="icon" className="h-8 w-8" />
-                        }
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingGoal(goal)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDelete(goal)}
+                  {canManage && (
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button variant="ghost" size="icon" className="h-8 w-8" />
+                          }
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingGoal(goal)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(goal)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

@@ -18,6 +18,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { InterventionWithSchool } from '@/lib/database.types'
 
+const MAX_EVIDENCE_BYTES = 5 * 1024 * 1024
+
 export function ResolveInterventionDialog({
   intervention,
   open,
@@ -46,6 +48,11 @@ export function ResolveInterventionDialog({
 
     if (!notes && !file) {
       toast.error('Add written evidence or upload a picture before resolving.')
+      return
+    }
+
+    if (file && file.size > MAX_EVIDENCE_BYTES) {
+      toast.error('Picture must be 5 MB or smaller.')
       return
     }
 

@@ -2,15 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/queries/profile'
+import { requireSystemManager } from '@/lib/action-auth'
 import type { CalendarEventType } from '@/lib/database.types'
-
-const MANAGE_ROLES = ['admin', 'regional_manager', 'staff', 'coach', 'consultant', 'developer']
-
-async function canManageCalendar() {
-  const profile = await getCurrentProfile()
-  return profile && MANAGE_ROLES.includes(profile.role)
-}
 
 export async function createCalendarEvent(data: {
   title: string
@@ -22,14 +15,12 @@ export async function createCalendarEvent(data: {
   location?: string
   school_id?: string
 }) {
-  if (!(await canManageCalendar())) {
-    return { error: 'You do not have permission to create calendar events.' }
-  }
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
 
-  const profile = await getCurrentProfile()
   const supabase = await createClient()
   const { error } = await supabase.from('calendar_events').insert([
-    { ...data, created_by: profile?.id },
+    { ...data, created_by: auth.profile.id },
   ])
 
   if (error) return { error: error.message }

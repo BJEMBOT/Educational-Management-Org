@@ -23,6 +23,7 @@ import type { CalendarEventItem } from '@/lib/database.types'
 const sourceLabels = {
   pd: 'PD',
   coaching: 'Coaching',
+  evaluation: 'Evaluation',
   intervention: 'Intervention',
   custom: 'Event',
 } as const

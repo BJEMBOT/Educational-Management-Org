@@ -3,10 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/queries/profile'
+import { requireSystemManager } from '@/lib/action-auth'
 import { resolveInterventionOwner } from '@/lib/intervention-assignment'
 import type { InterventionStatus } from '@/lib/database.types'
 
 const EVIDENCE_BUCKET = 'intervention-evidence'
+const MAX_EVIDENCE_BYTES = 5 * 1024 * 1024
 
 export async function createIntervention(formData: {
   school_id: string
@@ -17,6 +19,9 @@ export async function createIntervention(formData: {
   owner_id?: string
   status: InterventionStatus
 }) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
 
   let ownerId = formData.owner_id
@@ -66,6 +71,9 @@ export async function updateIntervention(
     status: InterventionStatus
   }>
 ) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   if (formData.status === 'resolved') {
     return {
       error: 'Use the resolve flow to provide evidence before marking as resolved.',
@@ -102,6 +110,9 @@ export async function resolveIntervention(
   schoolId: string,
   formData: FormData
 ) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const notes = (formData.get('resolution_notes') as string | null)?.trim() ?? ''
   const file = formData.get('evidence_file') as File | null
   const hasFile = file && file.size > 0
@@ -115,6 +126,10 @@ export async function resolveIntervention(
   let evidenceUrl: string | null = null
 
   if (hasFile && file) {
+    if (file.size > MAX_EVIDENCE_BYTES) {
+      return { error: 'Picture must be 5 MB or smaller.' }
+    }
+
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
     const path = `${id}/${Date.now()}.${ext}`
     const { error: uploadError } = await supabase.storage
@@ -149,6 +164,9 @@ export async function resolveIntervention(
 }
 
 export async function deleteIntervention(id: string, schoolId: string) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('interventions').delete().eq('id', id)
 

@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/queries/profile'
-import { hasPermission } from '@/lib/permissions'
+import { requireSystemManager } from '@/lib/action-auth'
+import { canManageCertifications } from '@/lib/permissions'
 import { computeCertificationStatus } from '@/lib/certification-expiry'
 import type { CertificationStatus, PdEventStatus } from '@/lib/database.types'
 
@@ -23,6 +24,9 @@ export async function createPdEvent(data: {
   join_instructions?: string
   status?: PdEventStatus
 }) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('pd_events').insert([data])
   if (error) return { error: error.message }
@@ -43,6 +47,9 @@ export async function registerForPd(eventId: string, userId: string) {
 }
 
 export async function markAttendance(registrationId: string, eventId: string) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('pd_registrations')
@@ -66,7 +73,7 @@ export async function createCertification(data: {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
 
-  const canManage = hasPermission(profile.role, 'certifications.manage')
+  const canManage = canManageCertifications(profile.role)
   if (data.user_id !== profile.id && !canManage) {
     return { error: 'You can only add certifications for yourself.' }
   }
@@ -125,8 +132,8 @@ export async function submitCertificationRenewal(
 
 export async function approveCertificationRenewal(certificationId: string) {
   const profile = await getCurrentProfile()
-  if (!profile || !hasPermission(profile.role, 'certifications.manage')) {
-    return { error: 'Only administrators can approve renewals.' }
+  if (!profile || !canManageCertifications(profile.role)) {
+    return { error: 'Only administrators and developers can approve renewals.' }
   }
 
   const supabase = await createClient()
@@ -165,8 +172,8 @@ export async function approveCertificationRenewal(certificationId: string) {
 
 export async function rejectCertificationRenewal(certificationId: string) {
   const profile = await getCurrentProfile()
-  if (!profile || !hasPermission(profile.role, 'certifications.manage')) {
-    return { error: 'Only administrators can reject renewals.' }
+  if (!profile || !canManageCertifications(profile.role)) {
+    return { error: 'Only administrators and developers can reject renewals.' }
   }
 
   const supabase = await createClient()
@@ -191,6 +198,9 @@ export async function updateCertification(
     notes: string
   }>
 ) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('certifications').update(data).eq('id', id)
   if (error) return { error: error.message }
@@ -199,6 +209,9 @@ export async function updateCertification(
 }
 
 export async function deleteCertification(id: string) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('certifications').delete().eq('id', id)
   if (error) return { error: error.message }

@@ -6,7 +6,7 @@ import { certificationNeedsReminder } from '@/lib/certification-expiry'
 import { CertificationRenewalApprovals } from '@/components/pd/certification-renewal-approvals'
 import { getSchools } from '@/lib/queries/schools'
 import { getAllProfiles } from '@/lib/queries/users'
-import { hasPermission } from '@/lib/permissions'
+import { canManageCertifications } from '@/lib/permissions'
 import { CertificationForm } from '@/components/pd/certification-form'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
@@ -23,7 +23,7 @@ const statusStyles: Record<string, string> = {
 
 export default async function CertificationsPage() {
   const profile = await getCurrentProfile()
-  const canManage = profile ? hasPermission(profile.role, 'certifications.manage') : false
+  const canManage = profile ? canManageCertifications(profile.role) : false
   const [certs, schools, employees, pendingRenewals] = await Promise.all([
     getCertifications(canManage ? undefined : profile?.id),
     getSchools(),

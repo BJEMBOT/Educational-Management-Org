@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { frequencyFromEvaluation } from '@/lib/coaching-schedule'
 import type {
+  CoachingCheckIn,
   CoachingCycle,
   CoachingCycleWithDetails,
   CoachingLog,
   Observation,
+  Profile,
+  TeachingEvaluation,
 } from '@/lib/database.types'
 
 export async function getCoachingCycles(filters?: {
@@ -20,7 +24,7 @@ export async function getCoachingCycles(filters?: {
   if (filters?.teacherId) query = query.eq('teacher_id', filters.teacherId)
 
   const { data, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
 
   const cycles = data ?? []
   const profileIds = [
@@ -42,7 +46,7 @@ export async function getCoachingCycles(filters?: {
       .select('cycle_id')
       .in('cycle_id', cycleIds)
 
-    if (obsError) throw obsError
+    if (obsError) throw new Error(obsError.message)
     for (const obs of observations ?? []) {
       observationCountByCycle.set(
         obs.cycle_id,
@@ -65,7 +69,7 @@ export async function getCoachingCycles(filters?: {
 
 export async function getCoachingCycleById(id: string) {
   const supabase = await createClient()
-  const [cycleRes, obsRes, logsRes] = await Promise.all([
+  const [cycleRes, obsRes, logsRes, checkInsRes] = await Promise.all([
     supabase.from('coaching_cycles').select('*, schools(name)').eq('id', id).single(),
     supabase
       .from('observations')
@@ -77,6 +81,11 @@ export async function getCoachingCycleById(id: string) {
       .select('*')
       .eq('cycle_id', id)
       .order('log_date', { ascending: false }),
+    supabase
+      .from('coaching_check_ins')
+      .select('*')
+      .eq('cycle_id', id)
+      .order('scheduled_at', { ascending: true }),
   ])
 
   if (cycleRes.error || !cycleRes.data) return null
@@ -84,21 +93,78 @@ export async function getCoachingCycleById(id: string) {
   const c = cycleRes.data as CoachingCycle & { schools: { name: string } }
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, name')
+    .select('id, name, teaching_evaluation')
     .in('id', [c.coach_id, c.teacher_id])
 
-  const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.name ?? 'Unknown']))
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [
+      p.id,
+      {
+        name: p.name ?? 'Unknown',
+        teaching_evaluation: p.teaching_evaluation as TeachingEvaluation | null,
+      },
+    ])
+  )
+
+  const teacherProfile = profileMap.get(c.teacher_id)
 
   return {
     cycle: {
       ...c,
       school_name: c.schools.name,
-      coach_name: nameMap.get(c.coach_id) ?? 'Unknown',
-      teacher_name: nameMap.get(c.teacher_id) ?? 'Unknown',
+      coach_name: profileMap.get(c.coach_id)?.name ?? 'Unknown',
+      teacher_name: teacherProfile?.name ?? 'Unknown',
+      teacher_evaluation: teacherProfile?.teaching_evaluation ?? null,
     },
     observations: (obsRes.data ?? []) as Observation[],
     logs: (logsRes.data ?? []) as CoachingLog[],
+    checkIns: (checkInsRes.data ?? []) as CoachingCheckIn[],
   }
+}
+
+export async function getCheckInsForCycle(cycleId: string): Promise<CoachingCheckIn[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('coaching_check_ins')
+    .select('*')
+    .eq('cycle_id', cycleId)
+    .order('scheduled_at', { ascending: true })
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function getNextCheckInForTeacher(
+  teacherId: string
+): Promise<{ scheduled_at: string; cycle_id: string } | null> {
+  const supabase = await createClient()
+  const { data: cycles } = await supabase
+    .from('coaching_cycles')
+    .select('id')
+    .eq('teacher_id', teacherId)
+    .eq('status', 'active')
+
+  const cycleIds = (cycles ?? []).map((c) => c.id)
+  if (cycleIds.length === 0) return null
+
+  const { data, error } = await supabase
+    .from('coaching_check_ins')
+    .select('scheduled_at, cycle_id')
+    .in('cycle_id', cycleIds)
+    .eq('status', 'scheduled')
+    .gte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export function getDefaultFrequencyForTeacher(
+  evaluation: TeachingEvaluation | null | undefined
+) {
+  return frequencyFromEvaluation(evaluation)
 }
 
 export function summarizeCoachingCycles(
@@ -116,8 +182,21 @@ export async function getCoachingSummary(coachId: string) {
   return summarizeCoachingCycles(cycles)
 }
 
-export async function getProfilesByRole(role: string) {
+export async function getProfilesByRole(role: string): Promise<Profile[]> {
   const supabase = await createClient()
-  const { data } = await supabase.from('profiles').select('*').eq('role', role)
-  return data ?? []
+  const { data, error } = await supabase.from('profiles').select('*').eq('role', role)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as Profile[]
+}
+
+export async function getCoachProfiles(): Promise<Profile[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('role', ['coach', 'consultant', 'admin', 'developer', 'regional_manager'])
+    .order('name')
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as Profile[]
 }

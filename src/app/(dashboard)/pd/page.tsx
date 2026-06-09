@@ -12,13 +12,23 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-export default async function PdCatalogPage() {
+export default async function PdCatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>
+}) {
+  const { status: statusFilter } = await searchParams
   const profile = await getCurrentProfile()
   const canManage = profile ? canManagePd(profile.role) : false
   const [events, registrations] = await Promise.all([
     getPdEvents(),
     profile ? getUserRegistrations(profile.id) : Promise.resolve([]),
   ])
+
+  const displayEvents =
+    statusFilter === 'scheduled'
+      ? events.filter((e) => e.status === 'scheduled')
+      : events
 
   const registeredIds = new Set(registrations.map((r) => r.event_id))
   const assignedByMap = new Map(
@@ -44,6 +54,15 @@ export default async function PdCatalogPage() {
         }
       />
 
+      {statusFilter === 'scheduled' && (
+        <p className="text-sm text-muted-foreground">
+          Showing upcoming scheduled sessions.{' '}
+          <Link href="/pd" className="font-medium text-foreground hover:underline">
+            View all sessions
+          </Link>
+        </p>
+      )}
+
       <DataTableWrapper>
         <Table>
           <TableHeader>
@@ -58,7 +77,14 @@ export default async function PdCatalogPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.map((e) => (
+            {displayEvents.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  No sessions match this filter.
+                </TableCell>
+              </TableRow>
+            ) : (
+            displayEvents.map((e) => (
               <TableRow key={e.id}>
                 <TableCell>
                   <Link href={`/pd/${e.id}`} className="font-medium hover:underline">
@@ -103,7 +129,7 @@ export default async function PdCatalogPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )))}
           </TableBody>
         </Table>
       </DataTableWrapper>

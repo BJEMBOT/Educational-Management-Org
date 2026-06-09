@@ -18,7 +18,35 @@ export type SchoolHealth = 'healthy' | 'at_risk' | 'off_track'
 export type GrowthPlanStatus = 'draft' | 'active' | 'completed'
 export type GoalItemStatus = 'not_started' | 'in_progress' | 'completed'
 export type CoachingCycleStatus = 'active' | 'completed' | 'paused'
+export type TeachingEvaluation =
+  | 'exemplary'
+  | 'effective'
+  | 'developing'
+  | 'needs_improvement'
+export type CheckInFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly'
+export type FrequencySource = 'evaluation_default' | 'coach_override'
+export type CoachingSupportLevel = 'high' | 'standard' | 'light'
+export type CoachingCheckInStatus = 'scheduled' | 'completed' | 'cancelled' | 'missed'
 export type ObservationType = 'walkthrough' | 'formal' | 'informal'
+export type EvaluationCycleType = 'quarterly' | 'semester' | 'annual'
+export type EvaluationCycleStatus =
+  | 'draft'
+  | 'active'
+  | 'mid_year_review'
+  | 'completed'
+  | 'archived'
+export type RubricRating =
+  | 'exemplary'
+  | 'effective'
+  | 'developing'
+  | 'needs_improvement'
+export type ArtifactType =
+  | 'lesson_plan'
+  | 'assessment'
+  | 'student_work'
+  | 'pd_certificate'
+  | 'communication_log'
+  | 'other'
 export type PdEventStatus = 'scheduled' | 'completed' | 'cancelled'
 export type PdRegistrationStatus = 'registered' | 'attended' | 'cancelled' | 'no_show'
 export type CertificationStatus = 'active' | 'expiring' | 'expired'
@@ -33,10 +61,16 @@ export type CalendarEventType =
   | 'pd'
   | 'coaching'
   | 'intervention'
+  | 'evaluation'
   | 'meeting'
   | 'deadline'
   | 'other'
-export type CalendarEventSource = 'pd' | 'coaching' | 'intervention' | 'custom'
+export type CalendarEventSource =
+  | 'pd'
+  | 'coaching'
+  | 'intervention'
+  | 'evaluation'
+  | 'custom'
 export type PresenceStatus = 'online' | 'away' | 'offline'
 
 export interface School {
@@ -82,6 +116,7 @@ export interface Profile {
   role: UserRole
   partner_id: string | null
   partner_user_type: PartnerUserType | null
+  teaching_evaluation: TeachingEvaluation | null
   created_at: string
 }
 
@@ -170,17 +205,103 @@ export interface CoachingCycle {
   status: CoachingCycleStatus
   start_date: string
   end_date: string | null
+  check_in_frequency: CheckInFrequency
+  frequency_source: FrequencySource
+  support_level: CoachingSupportLevel
+  next_check_in_at: string | null
+  evaluation_cycle_id: string | null
   created_at: string
+}
+
+export interface CoachingCheckIn {
+  id: string
+  cycle_id: string
+  scheduled_at: string
+  status: CoachingCheckInStatus
+  completed_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface WalkthroughData {
+  student_engagement?: string
+  classroom_management?: string
+  differentiation?: string
+  technology_integration?: string
 }
 
 export interface Observation {
   id: string
-  cycle_id: string
+  cycle_id: string | null
+  evaluation_cycle_id: string | null
+  observer_id: string | null
   observation_type: ObservationType
   notes: string
   feedback: string
   ratings: Record<string, number>
+  walkthrough_data: WalkthroughData
   observation_date: string
+  created_at: string
+}
+
+export interface EvaluationFramework {
+  id: string
+  name: string
+  slug: string
+  is_system: boolean
+  is_active: boolean
+  created_at: string
+}
+
+export interface RubricDomain {
+  id: string
+  framework_id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
+
+export interface RubricIndicator {
+  id: string
+  domain_id: string
+  code: string
+  description: string
+  sort_order: number
+  created_at: string
+}
+
+export interface EvaluationCycle {
+  id: string
+  teacher_id: string
+  school_id: string
+  evaluator_id: string
+  framework_id: string
+  cycle_type: EvaluationCycleType
+  school_year: string
+  status: EvaluationCycleStatus
+  start_date: string
+  end_date: string | null
+  overall_rating: TeachingEvaluation | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ObservationRubricScore {
+  id: string
+  observation_id: string
+  indicator_id: string
+  rating: RubricRating
+  created_at: string
+}
+
+export interface EvaluationArtifact {
+  id: string
+  evaluation_cycle_id: string
+  artifact_type: ArtifactType
+  title: string
+  file_url: string | null
+  notes: string | null
+  uploaded_by: string
   created_at: string
 }
 
@@ -318,6 +439,23 @@ export interface CoachingCycleWithDetails extends CoachingCycle {
   teacher_name: string
   school_name: string
   observation_count: number
+}
+
+export interface EvaluationCycleWithDetails extends EvaluationCycle {
+  teacher_name: string
+  evaluator_name: string
+  school_name: string
+  framework_name: string
+  observation_count: number
+}
+
+export interface ObservationWithDetails extends Observation {
+  observer_name: string | null
+  rubric_scores: ObservationRubricScore[]
+}
+
+export interface EvaluationArtifactWithUploader extends EvaluationArtifact {
+  uploader_name: string
 }
 
 export interface PdEventWithCount extends PdEvent {

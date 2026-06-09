@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { requireSystemManager } from '@/lib/action-auth'
 import type { GoalCategory, GoalStatus } from '@/lib/database.types'
 
 export async function createGoal(formData: {
@@ -13,6 +14,9 @@ export async function createGoal(formData: {
   status: GoalStatus
   time_period: string
 }) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('goals').insert([formData])
 
@@ -36,6 +40,9 @@ export async function updateGoal(
     time_period: string
   }>
 ) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('goals').update(formData).eq('id', id)
 
@@ -48,6 +55,9 @@ export async function updateGoal(
 }
 
 export async function deleteGoal(id: string, schoolId: string) {
+  const auth = await requireSystemManager()
+  if (!auth.ok) return { error: auth.error }
+
   const supabase = await createClient()
   const { error } = await supabase.from('goals').delete().eq('id', id)
 

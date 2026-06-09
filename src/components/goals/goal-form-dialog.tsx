@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createGoal, updateGoal } from '@/app/actions/goals'
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { categoryLabels } from '@/lib/school-health'
+import { labelsToSelectOptions, schoolSelectOptions } from '@/lib/select-options'
 import type { Goal, GoalCategory, GoalStatus, School } from '@/lib/database.types'
 
 interface GoalFormDialogProps {
@@ -54,6 +55,18 @@ export function GoalFormDialog({
 
   const open = controlledOpen ?? internalOpen
   const setOpen = onOpenChange ?? setInternalOpen
+
+  const schoolOptions = useMemo(() => schoolSelectOptions(schools), [schools])
+  const categoryOptions = useMemo(() => labelsToSelectOptions(categoryLabels), [])
+  const statusOptions = useMemo(
+    () =>
+      labelsToSelectOptions({
+        on_track: 'On Track',
+        at_risk: 'At Risk',
+        off_track: 'Off Track',
+      }),
+    []
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -101,14 +114,19 @@ export function GoalFormDialog({
           {!goal && (
             <div className="space-y-2">
               <Label>School</Label>
-              <Select value={schoolId} onValueChange={(v) => v && setSchoolId(v)} required>
-                <SelectTrigger>
+              <Select
+                value={schoolId}
+                onValueChange={(v) => v && setSchoolId(v)}
+                items={schoolOptions}
+                required
+              >
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select school" />
                 </SelectTrigger>
                 <SelectContent>
-                  {schools.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                  {schoolOptions.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -117,14 +135,18 @@ export function GoalFormDialog({
           )}
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={category} onValueChange={(v) => v && setCategory(v as GoalCategory)}>
-              <SelectTrigger>
+            <Select
+              value={category}
+              onValueChange={(v) => v && setCategory(v as GoalCategory)}
+              items={categoryOptions}
+            >
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(categoryLabels) as GoalCategory[]).map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {categoryLabels[cat]}
+                {categoryOptions.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -165,14 +187,20 @@ export function GoalFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={(v) => v && setStatus(v as GoalStatus)}>
-              <SelectTrigger>
+            <Select
+              value={status}
+              onValueChange={(v) => v && setStatus(v as GoalStatus)}
+              items={statusOptions}
+            >
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="on_track">On Track</SelectItem>
-                <SelectItem value="at_risk">At Risk</SelectItem>
-                <SelectItem value="off_track">Off Track</SelectItem>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

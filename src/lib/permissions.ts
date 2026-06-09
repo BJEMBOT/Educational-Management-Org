@@ -1,3 +1,7 @@
+import {
+  getDefaultHomePathForView,
+  roleToAppView,
+} from '@/lib/app-views'
 import type { PartnerUserType, Profile, UserRole } from '@/lib/database.types'
 
 export type Permission =
@@ -14,6 +18,10 @@ export type Permission =
   | 'coaching.manage'
   | 'coaching.read'
   | 'observations.write'
+  | 'evaluations.manage'
+  | 'evaluations.conduct'
+  | 'evaluations.read'
+  | 'evaluations.artifacts.own'
   | 'pd.read'
   | 'pd.manage'
   | 'pd.register'
@@ -42,6 +50,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'interventions.write',
     'growth_plans.read',
     'coaching.read',
+    'evaluations.conduct',
+    'evaluations.read',
     'pd.read',
     'pd.manage',
     'certifications.read',
@@ -68,6 +78,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'growth_plans.own',
     'growth_plans.write',
     'coaching.read',
+    'evaluations.read',
+    'evaluations.artifacts.own',
     'pd.read',
     'pd.register',
     'certifications.read',
@@ -79,6 +91,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'coaching.manage',
     'coaching.read',
     'observations.write',
+    'evaluations.conduct',
+    'evaluations.read',
     'growth_plans.read',
     'pd.read',
     'pd.register',
@@ -91,6 +105,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'coaching.manage',
     'coaching.read',
     'observations.write',
+    'evaluations.conduct',
+    'evaluations.read',
     'growth_plans.read',
     'pd.read',
     'certifications.read',
@@ -125,8 +141,21 @@ export function isOrgWideAdmin(role: UserRole): boolean {
   return role === 'admin' || role === 'developer' || role === 'regional_manager'
 }
 
+/** Create calendar/PD events and edit core system records */
+export function canManageSystemRecords(role: UserRole): boolean {
+  return role === 'admin' || role === 'developer'
+}
+
+export function canManageCalendar(role: UserRole): boolean {
+  return canManageSystemRecords(role)
+}
+
+export function canManageCertifications(role: UserRole): boolean {
+  return canManageSystemRecords(role)
+}
+
 export function canManagePartners(role: UserRole): boolean {
-  return hasPermission(role, '*') || role === 'admin' || role === 'regional_manager'
+  return canManageSystemRecords(role)
 }
 
 export function canViewAllPartnerData(role: UserRole): boolean {
@@ -156,15 +185,44 @@ export function canManageTimeOff(role: UserRole): boolean {
 }
 
 export function canManagePd(role: UserRole): boolean {
-  return hasPermission(role, '*') || hasPermission(role, 'pd.manage')
+  return canManageSystemRecords(role)
 }
 
 export function canManageCoaching(role: UserRole): boolean {
-  return hasPermission(role, '*') || hasPermission(role, 'coaching.manage')
+  return canManageSystemRecords(role)
 }
 
 export function canViewAllCoachingCycles(role: UserRole): boolean {
   return hasPermission(role, '*') || role === 'regional_manager'
+}
+
+export function canManageEvaluations(role: UserRole): boolean {
+  return canManageSystemRecords(role)
+}
+
+export function canConductEvaluations(role: UserRole): boolean {
+  return canManageSystemRecords(role)
+}
+
+export function canViewAllEvaluations(role: UserRole): boolean {
+  return canManageSystemRecords(role)
+}
+
+export function canEditGrowthPlan(
+  role: UserRole,
+  profileId: string,
+  planUserId: string
+): boolean {
+  return canManageSystemRecords(role) || (role === 'teacher' && profileId === planUserId)
+}
+
+/** Hard-delete accidental coaching cycles, check-ins, evaluations, etc. */
+export function canDeleteScheduledRecords(role: UserRole): boolean {
+  return role === 'admin' || role === 'developer'
+}
+
+export function canAccessFinance(role: UserRole): boolean {
+  return role === 'admin' || role === 'developer'
 }
 
 export const roleLabels: Record<UserRole, string> = {
@@ -186,20 +244,5 @@ export const partnerUserTypeLabels: Record<PartnerUserType, string> = {
 }
 
 export function getDefaultHomePath(role: UserRole): string {
-  switch (role) {
-    case 'partner':
-      return '/partners'
-    case 'teacher':
-    case 'coach':
-    case 'consultant':
-      return '/workspace'
-    case 'parent':
-      return '/workspace'
-    case 'board_member':
-      return '/'
-    case 'developer':
-      return '/'
-    default:
-      return '/'
-  }
+  return getDefaultHomePathForView(roleToAppView(role))
 }

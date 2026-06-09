@@ -44,6 +44,16 @@ function AlertDialogTriggerButton({
   ...props
 }: AlertDialogPrimitive.Trigger.Props &
   VariantProps<typeof alertDialogTriggerVariants>) {
+  if (React.isValidElement(children) && children.type === Button) {
+    return (
+      <AlertDialogPrimitive.Trigger
+        data-slot="alert-dialog-trigger"
+        render={children}
+        {...props}
+      />
+    )
+  }
+
   return (
     <AlertDialogPrimitive.Trigger
       data-slot="alert-dialog-trigger"

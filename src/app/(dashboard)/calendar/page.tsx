@@ -4,9 +4,8 @@ import { getCalendarEvents } from '@/lib/queries/calendar'
 import { getSchools } from '@/lib/queries/schools'
 import { SharedCalendar } from '@/components/calendar/shared-calendar'
 import { CalendarEventForm } from '@/components/calendar/calendar-event-form'
+import { canManageCalendar } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/page-header'
-
-const MANAGE_ROLES = ['admin', 'regional_manager', 'staff', 'coach', 'consultant', 'developer']
 
 export default async function CalendarPage() {
   const profile = await getCurrentProfile()
@@ -19,7 +18,7 @@ export default async function CalendarPage() {
     getSchools(),
   ])
 
-  const canManage = profile && MANAGE_ROLES.includes(profile.role)
+  const canManage = profile ? canManageCalendar(profile.role) : false
 
   return (
     <div className="space-y-6">

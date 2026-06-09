@@ -1,6 +1,12 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Profile } from '@/lib/database.types'
+import {
+  getDeveloperPreviewView,
+  getEffectiveRole,
+  getEffectiveView,
+} from '@/lib/developer-view-server'
+import type { AppView } from '@/lib/app-views'
+import type { Profile, UserRole } from '@/lib/database.types'
 
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient()
@@ -17,4 +23,28 @@ export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
     .single()
 
   return data
+})
+
+export const getProfileViewContext = cache(async () => {
+  const profile = await getCurrentProfile()
+  if (!profile) {
+    return {
+      profile: null,
+      effectiveView: 'staff' as AppView,
+      effectiveRole: 'staff' as UserRole,
+      isDeveloperPreview: false,
+    }
+  }
+
+  const effectiveView = await getEffectiveView(profile.role)
+  const effectiveRole = await getEffectiveRole(profile.role)
+  const previewView =
+    profile.role === 'developer' ? await getDeveloperPreviewView() : null
+
+  return {
+    profile,
+    effectiveView,
+    effectiveRole,
+    isDeveloperPreview: profile.role === 'developer' && previewView !== null,
+  }
 })

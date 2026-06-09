@@ -4,11 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/queries/profile'
 import { hasFinanceAccess } from '@/lib/finance-access.server'
+import { canAccessFinance } from '@/lib/permissions'
 import type { RevenueSource } from '@/lib/database.types'
 
 async function requireFinanceAccess() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'developer') {
+  if (!profile || !canAccessFinance(profile.role)) {
     return { error: 'Revenue data is only available to authorized users.' as const, profile: null }
   }
   if (!(await hasFinanceAccess())) {

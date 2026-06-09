@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
 import { ExternalLink, FileText, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -39,6 +39,7 @@ interface InterventionsTableProps {
   schools: School[]
   showSchoolColumn?: boolean
   showFilters?: boolean
+  canManage?: boolean
 }
 
 const statusStyles = {
@@ -59,10 +60,16 @@ export function InterventionsTable({
   schools,
   showSchoolColumn = true,
   showFilters = true,
+  canManage = false,
 }: InterventionsTableProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialStatus = searchParams.get('status')
   const [schoolFilter, setSchoolFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    if (initialStatus === 'open' || initialStatus === 'resolved') return initialStatus
+    return 'all'
+  })
   const [editing, setEditing] = useState<InterventionWithSchool | null>(null)
   const [resolveTarget, setResolveTarget] = useState<InterventionWithSchool | null>(null)
   const [selectKeys, setSelectKeys] = useState<Record<string, number>>({})
@@ -173,14 +180,14 @@ export function InterventionsTable({
               <TableHead>Action Taken</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-10" />
+              {canManage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showSchoolColumn ? 7 : 6}
+                  colSpan={showSchoolColumn ? (canManage ? 7 : 6) : canManage ? 6 : 5}
                   className="text-center text-muted-foreground"
                 >
                   No interventions match the selected filters.
@@ -215,24 +222,30 @@ export function InterventionsTable({
                     <TableCell>{intervention.owner}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1.5">
-                        <Select
-                          key={`${intervention.id}-${selectKeys[intervention.id] ?? 0}`}
-                          defaultValue={intervention.status}
-                          onValueChange={(v) => v && handleStatusChange(intervention, v)}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              'h-8 w-[120px] border font-medium',
-                              style.badge
-                            )}
+                        {canManage ? (
+                          <Select
+                            key={`${intervention.id}-${selectKeys[intervention.id] ?? 0}`}
+                            defaultValue={intervention.status}
+                            onValueChange={(v) => v && handleStatusChange(intervention, v)}
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            <SelectTrigger
+                              className={cn(
+                                'h-8 w-[120px] border font-medium',
+                                style.badge
+                              )}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline" className={cn('w-fit', style.badge)}>
+                            {style.label}
+                          </Badge>
+                        )}
                         {intervention.status === 'resolved' &&
                           intervention.resolution_evidence_url && (
                             <a
@@ -247,6 +260,7 @@ export function InterventionsTable({
                           )}
                       </div>
                     </TableCell>
+                    {canManage && (
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -279,6 +293,7 @@ export function InterventionsTable({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
+                    )}
                   </TableRow>
                 )
               })

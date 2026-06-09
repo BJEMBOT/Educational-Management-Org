@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   XCircle,
   ClipboardList,
+  ClipboardCheck,
   BookOpen,
   Award,
   Target,
@@ -19,7 +20,8 @@ import {
 } from '@/lib/queries/schools'
 import { getPdDashboardSnapshot, getPendingCertificationRenewals } from '@/lib/queries/pd'
 import { getRecentOpenInterventions } from '@/lib/queries/interventions'
-import { hasPermission } from '@/lib/permissions'
+import { summarizeEvaluations } from '@/lib/queries/evaluations'
+import { canManageCertifications } from '@/lib/permissions'
 import { PageHeader } from '@/components/ui/page-header'
 import { MetricCard } from '@/components/ui/metric-card'
 import { SchoolStatusBadge } from '@/components/schools/school-status-badge'
@@ -33,7 +35,7 @@ import type { Profile } from '@/lib/database.types'
 
 export function ExecutiveDashboard({ profile }: { profile?: Profile | null }) {
   const canManageCerts = profile
-    ? hasPermission(profile.role, 'certifications.manage')
+    ? canManageCertifications(profile.role)
     : false
 
   return (
@@ -54,6 +56,7 @@ export function ExecutiveDashboard({ profile }: { profile?: Profile | null }) {
         <Link href="/partners"><Button variant="outline" size="sm"><Handshake className="mr-1.5 h-3.5 w-3.5" />Partners</Button></Link>
         <Link href="/certifications"><Button variant="outline" size="sm"><Award className="mr-1.5 h-3.5 w-3.5" />Certifications</Button></Link>
         <Link href="/pd"><Button variant="outline" size="sm"><BookOpen className="mr-1.5 h-3.5 w-3.5" />PD Catalog</Button></Link>
+        <Link href="/evaluations"><Button variant="outline" size="sm"><ClipboardCheck className="mr-1.5 h-3.5 w-3.5" />Evaluations</Button></Link>
       </div>
 
       <Suspense fallback={<DashboardPanelsSkeleton count={canManageCerts ? 4 : 3} />}>
@@ -64,29 +67,55 @@ export function ExecutiveDashboard({ profile }: { profile?: Profile | null }) {
 }
 
 async function ExecutiveMetrics() {
-  const [schools, pdSnapshot] = await Promise.all([
+  const [schools, pdSnapshot, evalSummary] = await Promise.all([
     getSchoolsWithGoalStats(),
     getPdDashboardSnapshot().catch(() => ({
       summary: { upcoming: 0, totalCredits: 0 },
       upcoming: [],
+    })),
+    summarizeEvaluations().catch(() => ({
+      total: 0,
+      active: 0,
+      draft: 0,
+      completed: 0,
+      overdue: 0,
+      ratingCounts: {
+        exemplary: 0,
+        effective: 0,
+        developing: 0,
+        needs_improvement: 0,
+      },
     })),
   ])
 
   const summary = summarizeSchools(schools)
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      <MetricCard label="Total Schools" value={summary.totalSchools} icon={Building2} accent="primary" />
-      <MetricCard label="Healthy" value={summary.healthyCount} icon={CheckCircle2} accent="success" subtext="≥80% goals on track" />
-      <MetricCard label="At Risk" value={summary.atRiskCount} icon={AlertTriangle} accent="warning" subtext="60–79% on track" />
-      <MetricCard label="Off Track" value={summary.offTrackCount} icon={XCircle} accent="danger" subtext="<60% on track" />
-      <MetricCard label="Open Interventions" value={summary.openInterventions} icon={ClipboardList} accent="default" />
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+      <MetricCard label="Total Schools" value={summary.totalSchools} icon={Building2} accent="primary" href="/schools" />
+      <MetricCard label="Healthy" value={summary.healthyCount} icon={CheckCircle2} accent="success" subtext="≥80% goals on track" href="/schools?health=healthy" />
+      <MetricCard label="At Risk" value={summary.atRiskCount} icon={AlertTriangle} accent="warning" subtext="60–79% on track" href="/schools?health=at_risk" />
+      <MetricCard label="Off Track" value={summary.offTrackCount} icon={XCircle} accent="danger" subtext="<60% on track" href="/schools?health=off_track" />
+      <MetricCard label="Open Interventions" value={summary.openInterventions} icon={ClipboardList} accent="default" href="/interventions?status=open" />
       <MetricCard
         label="Upcoming PD"
         value={pdSnapshot.summary.upcoming}
         icon={BookOpen}
         accent="primary"
         subtext={`${pdSnapshot.summary.totalCredits} total credit hrs`}
+        href="/pd?status=scheduled"
+      />
+      <MetricCard
+        label="Active Evaluations"
+        value={evalSummary.active}
+        icon={ClipboardCheck}
+        accent="primary"
+        subtext={
+          evalSummary.overdue > 0
+            ? `${evalSummary.overdue} overdue`
+            : `${evalSummary.completed} completed`
+        }
+        href="/evaluations"
       />
     </div>
   )

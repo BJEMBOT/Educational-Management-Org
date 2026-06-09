@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 
@@ -25,6 +26,7 @@ interface MetricCardProps {
   subtext?: string
   icon?: LucideIcon
   accent?: Accent
+  href?: string
   className?: string
 }
 
@@ -34,34 +36,50 @@ export function MetricCard({
   subtext,
   icon: Icon,
   accent = 'default',
+  href,
   className,
 }: MetricCardProps) {
-  return (
-    <div
-      className={cn(
-        'rounded-lg border border-l-4 bg-card p-4 shadow-sm',
-        accentStyles[accent],
-        className
-      )}
-    >
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {label}
-          </p>
-          <p className={cn('text-2xl font-semibold tabular-nums', valueStyles[accent])}>
-            {value}
-          </p>
-          {subtext && (
-            <p className="text-xs text-muted-foreground">{subtext}</p>
-          )}
-        </div>
-        {Icon && (
-          <div className="rounded-md bg-muted/60 p-2">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-          </div>
+  const content = (
+    <div className="flex items-start justify-between">
+      <div className="space-y-1">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className={cn('text-2xl font-semibold tabular-nums', valueStyles[accent])}>
+          {value}
+        </p>
+        {subtext && (
+          <p className="text-xs text-muted-foreground">{subtext}</p>
         )}
       </div>
+      {Icon && (
+        <div className="rounded-md bg-muted/60 p-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
     </div>
   )
+
+  const cardClassName = cn(
+    'rounded-lg border border-l-4 bg-card p-4 shadow-sm',
+    accentStyles[accent],
+    href && 'transition-shadow hover:shadow-md',
+    className
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          cardClassName,
+          'block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+        )}
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  return <div className={cardClassName}>{content}</div>
 }

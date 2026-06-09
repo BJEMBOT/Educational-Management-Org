@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { UserCheck } from 'lucide-react'
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { schoolSelectOptions } from '@/lib/select-options'
 import type {
   Intervention,
   InterventionStatus,
@@ -67,6 +68,7 @@ export function InterventionFormDialog({
     role: string
   } | null>(null)
   const [loadingAssignee, setLoadingAssignee] = useState(false)
+  const schoolOptions = useMemo(() => schoolSelectOptions(schools), [schools])
 
   const open = controlledOpen ?? internalOpen
 
@@ -148,14 +150,19 @@ export function InterventionFormDialog({
           {!intervention && (
             <div className="space-y-2">
               <Label>School</Label>
-              <Select value={schoolId} onValueChange={(v) => v && setSchoolId(v)} required>
-                <SelectTrigger>
+              <Select
+                value={schoolId}
+                onValueChange={(v) => v && setSchoolId(v)}
+                items={schoolOptions}
+                required
+              >
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select school" />
                 </SelectTrigger>
                 <SelectContent>
-                  {schools.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                  {schoolOptions.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

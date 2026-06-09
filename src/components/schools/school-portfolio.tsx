@@ -1,4 +1,6 @@
 import { Plus } from 'lucide-react'
+import { getCurrentProfile } from '@/lib/queries/profile'
+import { canManageSystemRecords } from '@/lib/permissions'
 import { getSchoolsWithGoalStats } from '@/lib/queries/schools'
 import { getPartnerCountsBySchool, getPartners } from '@/lib/queries/partners'
 import { getGoals } from '@/lib/queries/goals'
@@ -11,6 +13,8 @@ import { PortfolioSummary } from '@/components/schools/portfolio-summary'
 import { PageHeader } from '@/components/ui/page-header'
 
 export async function SchoolPortfolio() {
+  const profile = await getCurrentProfile()
+  const canManage = profile ? canManageSystemRecords(profile.role) : false
   const [schools, partnerCounts, goals, interventions, partners, teachers] =
     await Promise.all([
       getSchoolsWithGoalStats(),
@@ -35,15 +39,17 @@ export async function SchoolPortfolio() {
         title="School Portfolio"
         subtitle="Browse and manage schools across your network"
         actions={
-          <SchoolFormDialog
-            triggerSize="sm"
-            trigger={
-              <>
-                <Plus className="mr-2 h-4 w-4" />
-                Add School
-              </>
-            }
-          />
+          canManage ? (
+            <SchoolFormDialog
+              triggerSize="sm"
+              trigger={
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add School
+                </>
+              }
+            />
+          ) : undefined
         }
       />
 

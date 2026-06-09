@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { Plus, DollarSign } from 'lucide-react'
 import { getCurrentProfile } from '@/lib/queries/profile'
 import { hasFinanceAccess } from '@/lib/finance-access.server'
+import { canAccessFinance } from '@/lib/permissions'
 import { getRevenueEntries, getRevenueSummary } from '@/lib/queries/revenue'
 import { FinanceUnlockScreen } from '@/components/layout/finance-unlock-screen'
 import { getSchools } from '@/lib/queries/schools'
@@ -49,7 +50,7 @@ function formatCurrency(amount: number) {
 
 export default async function RevenuePage() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'developer') {
+  if (!profile || !canAccessFinance(profile.role)) {
     redirect('/')
   }
 
@@ -74,7 +75,7 @@ export default async function RevenuePage() {
         subtitle="Financial overview — secured access"
         actions={
           <div className="flex items-center gap-2">
-            <FinancePinResetDialog />
+            {profile.role === 'developer' && <FinancePinResetDialog />}
             <RevenueFormDialog
               schools={schools}
               trigger={
