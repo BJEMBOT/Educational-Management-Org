@@ -1,0 +1,54 @@
+import { Plus } from 'lucide-react'
+import { getSchoolsWithGoalStats } from '@/lib/queries/schools'
+import { getPartnerCountsBySchool, getPartners } from '@/lib/queries/partners'
+import { getGoals } from '@/lib/queries/goals'
+import { getInterventions } from '@/lib/queries/interventions'
+import { buildDistrictDetails, getTeachersBySchool } from '@/lib/queries/districts'
+import { SchoolFormDialog } from '@/components/schools/school-form-dialog'
+import { SchoolPortfolioTable } from '@/components/schools/school-portfolio-table'
+import { DistrictRollupCards } from '@/components/schools/district-rollup-cards'
+import { PageHeader } from '@/components/ui/page-header'
+
+export async function SchoolPortfolio() {
+  const [schools, partnerCounts, goals, interventions, partners, teachers] =
+    await Promise.all([
+      getSchoolsWithGoalStats(),
+      getPartnerCountsBySchool(),
+      getGoals(),
+      getInterventions(),
+      getPartners(),
+      getTeachersBySchool(),
+    ])
+
+  const districts = buildDistrictDetails({
+    schools,
+    goals,
+    interventions,
+    partners,
+    teachers,
+  })
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="School Portfolio"
+        subtitle="Browse and manage schools across your network"
+        actions={
+          <SchoolFormDialog
+            triggerSize="sm"
+            trigger={
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Add School
+              </>
+            }
+          />
+        }
+      />
+
+      {districts.length > 0 && <DistrictRollupCards districts={districts} />}
+
+      <SchoolPortfolioTable schools={schools} partnerCounts={partnerCounts} />
+    </div>
+  )
+}
